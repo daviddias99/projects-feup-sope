@@ -10,115 +10,40 @@
 #include <sys/stat.h>
 #include <stdbool.h>
 
-#define BIT(n)              (0x01<<(n))
-#define MD5_HASH            (BIT(2))
-#define SHA1_HASH           (BIT(1))
-#define SHA256_HASH         (BIT(0))
-
-extern char *optarg;
-
-struct OPTIONS {
-    bool check_subdir;
-    bool check_fingerprint;
-    int8_t fp_mask; // mask = bit(2) = md5 ; bit(1) = sha1 ; bit(0) = sha256
-    bool logfile;
-    char* logfilename;
-    bool output;
-    char* output_file;
-
-} options;
-
-bool check_output(char* name){
-    //char* extension;
-
-    if(name[0] == '-')
-        return false;
-
-    //extension = strstr(name, ".csv");
-
-    //TODO: Further extension verification
-
-    return true;
-}
-
-int parse_fingerprints(char* fingerprints){
-    char* token = strtok(fingerprints, ",");
-
-    while(token != NULL){
-        
-        if(strcmp(token, "md5") == 0){
-            options.fp_mask |= MD5_HASH;
-        } else if(strcmp(token, "sha1") == 0){
-            options.fp_mask |= SHA1_HASH;
-        } else if(strcmp(token, "sha256") == 0){
-            options.fp_mask |= SHA256_HASH;
-        } else {
-            return -1;
-        }
-
-        token = strtok(NULL, ",");
-    }
-
-    return 0;
-}
-
-int parse_options(int argc, char* argv[]){
-    int opt;
-
-    while((opt = getopt(argc, argv, "rh:o:v")) != -1){
-
-        switch(opt) {
-
-            case 'r':
-                options.check_subdir = true;
-                break;
-
-            case 'h':
-                options.check_fingerprint = true;
-                parse_fingerprints(optarg);          
-                break;
-
-            case 'o':
-                options.output = true;
-                if(check_output(optarg))
-                    options.output_file = optarg;
-                else
-                    return 1;
-                
-                break;
-
-            case 'v':
-                options.logfile = true;
-                options.logfilename = getenv("LOGFILENAME");
-                break;
-
-            default:
-                exit(69);
-        }
-    }
-
-    return 0;
-}
+#include "options.h"
 
 
-int main(int argc, char* argv[], char* envp[]){
+int main(int argc, char* argv[]){
 
-    if (argc < 2)
-    {
+    if (argc < 2) {
         fprintf( stderr, "Usage: %s dir_name\n", argv[0]);
         exit(1);
     }
 
-    if(parse_options(argc, argv) == 1)
+    struct options options;
+    options.fp_mask = 0;
+
+    if(parse_options(argc, argv, &options) == 1)
         exit(2);
 
-/*
-    if(fork() == 0){
-        execlp("file", "file", argv[1], NULL);
-        exit(2);
-    }
+    if (options.check_subdir) {
+        printf("r\n");
+    } 
+    if (options.check_fingerprint) {
+        printf("h\n");
+    } 
+    if (options.fp_mask & MD5_HASH)
+        printf("md5\n");
+    if (options.fp_mask & SHA1_HASH)
+        printf("sha1\n");
+    if (options.fp_mask & SHA256_HASH)
+        printf("sha256\n");
+    if (options.logfile)
+        printf("%s\n", options.logfilename);
+    if (options.output)
+        printf("%s\n", options.output_file);
 
-*/
+
 
     exit(0);
 }
