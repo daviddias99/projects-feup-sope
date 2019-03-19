@@ -10,7 +10,12 @@
 #include <sys/stat.h>
 #include <stdbool.h>
 
-#define  BIT(n)         (0x01<<(n))
+#define BIT(n)              (0x01<<(n))
+#define MD5_HASH            (BIT(2));
+#define SHA1_HASH           (BIT(1));
+#define SHA256_HASH         (BIT(0));
+
+extern char *optarg;
 
 struct OPTIONS {
     bool check_subdir;
@@ -42,11 +47,11 @@ int parse_fingerprints(char* fingerprints){
     while(token != NULL){
         
         if(strcmp(token, "md5") == 0){
-            options.fp_mask |= BIT(2);
+            options.fp_mask |= MD5_HASH;
         } else if(strcmp(token, "sha1") == 0){
-            options.fp_mask |= BIT(1);
+            options.fp_mask |= SHA1_HASH;
         } else if(strcmp(token, "sha256") == 0){
-            options.fp_mask |= BIT(0);
+            options.fp_mask |= SHA256_HASH;
         } else {
             return -1;
         }
