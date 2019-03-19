@@ -11,9 +11,9 @@
 #include <stdbool.h>
 
 #define BIT(n)              (0x01<<(n))
-#define MD5_HASH            (BIT(2));
-#define SHA1_HASH           (BIT(1));
-#define SHA256_HASH         (BIT(0));
+#define MD5_HASH            (BIT(2))
+#define SHA1_HASH           (BIT(1))
+#define SHA256_HASH         (BIT(0))
 
 extern char *optarg;
 
