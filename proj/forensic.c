@@ -124,7 +124,9 @@ int parse_permissions(const mode_t* file_stat, char* permissions){
         permissions[i] = 'x';
         i++;
     }
-        permissions[i] = '\0';
+    
+    i ? i : (i = 1); 
+    permissions[i] = '\0';
         
     return 0;
 }
