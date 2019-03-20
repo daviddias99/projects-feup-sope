@@ -1,30 +1,58 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <stdbool.h>
+#include "forensic.h"
 
-#include "options.h"
+#define READ    0
+#define WRITE   1
 
 
-int main(int argc, char* argv[]){
+int get_file_info(char* path/* ,char* info*/) {
 
-    if (argc < 2) {
-        fprintf( stderr, "Usage: %s dir_name\n", argv[0]);
-        exit(1);
+    char* args[] = { "sha1sum", path, NULL };
+    char buf[128];
+
+    get_cmd_output(args, buf, 128);
+
+    printf("%s\n", buf);
+
+    args[0] = "sha256sum";
+
+    get_cmd_output(args, buf, 128);
+
+    printf("%s\n", buf);
+
+    args[0] = "file";
+
+    get_cmd_output(args, buf, 128);
+
+    printf("%s\n", buf);
+
+    return -1;
+}
+
+
+int get_cmd_output(char *args[], char* buf, size_t buf_size) {
+
+    int pid, fd[2];
+
+    pipe(fd);
+    pid = fork();
+    if (pid == -1) {
+        return -1;
+    } else if (pid == 0) {
+        close(fd[READ]);
+        dup2(fd[WRITE], STDOUT_FILENO);
+        execvp(args[0], args);
+    } else if (pid > 0) {
+        int status, n_read;
+
+        close(fd[WRITE]);
+
+        n_read = read(fd[READ], buf, buf_size);
+        buf[n_read - 1] = 0;
+       
+        wait(&status);
+        if (status)
+            return -1;
     }
 
-    struct options options;
-    options.fp_mask = 0;
-
-    if(parse_options(argc, argv, &options) == 1)
-        exit(2);
-
-    exit(0);
+    return 0;
 }
