@@ -19,7 +19,7 @@ int main(int argc, char* argv[]){
     if(stat(argv[argc-1],&file_stats) != 0)
         return -1;
     
-    build_file_line();
+    //build_file_line();
 
 
 

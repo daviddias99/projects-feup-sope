@@ -56,3 +56,46 @@ int get_cmd_output(char *args[], char* buf, size_t buf_size) {
 
     return 0;
 }
+
+int parse_permissions(const mode_t* file_stat, char* permissions){
+
+    size_t i = 0;
+    permissions[i] = '-';
+
+    if(*file_stat & S_IRUSR){
+
+        permissions[0] = 'r';
+        i++;
+    }
+        
+    if(*file_stat & S_IWUSR){
+
+        permissions[i] = 'w';
+        i++;
+    }
+
+    if(*file_stat & S_IXUSR){
+
+        permissions[i] = 'x';
+        i++;
+    }
+    
+    i ? i : (i = 1); 
+    permissions[i] = '\0';
+        
+    return 0;
+}
+
+
+int build_file_line(char* line[], struct stat* file_stat){
+
+    itoa(file_stat->st_size,line[2],10);                    // file size
+    parse_permissions(file_stat->st_mode, line[3]);         // file permissions
+                                                            // last access date
+                                                            // last modification date
+                                                            // md5
+                                                            // sha1
+                                                            // sha256 
+    return 0;
+}
+

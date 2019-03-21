@@ -35,34 +35,6 @@ static bool check_argument(char* name) {
     return true;
 }
 
-int parse_permissions(const mode_t* file_stat, char* permissions){
-
-    size_t i = 0;
-    permissions[i] = '-';
-
-    if(*file_stat & S_IRUSR){
-
-        permissions[0] = 'r';
-        i++;
-    }
-        
-    if(*file_stat & S_IWUSR){
-
-        permissions[i] = 'w';
-        i++;
-    }
-
-    if(*file_stat & S_IXUSR){
-
-        permissions[i] = 'x';
-        i++;
-    }
-    
-    i ? i : (i = 1); 
-    permissions[i] = '\0';
-        
-    return 0;
-}
 
 int parse_options(int argc, char* argv[], struct options* options){
     int opt;
