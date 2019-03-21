@@ -22,7 +22,7 @@ static int parse_fingerprints(char* fingerprints, struct options* options) {
     return 0;
 }
 
-static bool check_output(char* name) {
+static bool check_argument(char* name) {
     //char* extension;
 
     if(name[0] == '-')
@@ -64,8 +64,7 @@ int parse_permissions(const mode_t* file_stat, char* permissions){
     return 0;
 }
 
-
-int parse_options(int argc, char* argv[], struct options* options) {
+int parse_options(int argc, char* argv[], struct options* options){
     int opt;
 
     while((opt = getopt(argc, argv, "rh:o:v")) != -1){
@@ -78,33 +77,37 @@ int parse_options(int argc, char* argv[], struct options* options) {
 
             case 'h':
                 options->check_fingerprint = true;
-                parse_fingerprints(optarg, options);          
+
+                if(parse_fingerprints(optarg,options) != 0)
+                    return 1;         
+
                 break;
 
             case 'o':
                 options->output = true;
-                if(check_output(optarg)) {
-                    printf("%s\n", optarg);
-                    options->output_file = optarg;
-                }
-                else
-                    return -1;
 
+                if(check_argument(optarg))
+                    options->output_file = optarg;
+                else
+                    return 2;
+                
                 break;
 
             case 'v':
                 options->logfile = true;
-                if ((options->logfilename = getenv("LOGFILENAME")) == NULL)
-                    options->logfile = false;
 
-                
+                options->logfilename = getenv("LOGFILENAME");
+
+                if(options->logfilename == NULL)
+                    return 3;
 
                 break;
 
             default:
-                return -1;
+                return 4;
         }
     }
 
     return 0;
 }
+

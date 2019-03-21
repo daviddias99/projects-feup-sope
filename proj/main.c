@@ -14,6 +14,14 @@ int main(int argc, char* argv[]){
     if(parse_options(argc, argv, &options) == 1)
         exit(2);
 
+    struct stat file_stats;
+
+    if(stat(argv[argc-1],&file_stats) != 0)
+        return -1;
+    
+    build_file_line();
+
+
 
     get_file_info(argv[argc - 1]);
     
