@@ -104,17 +104,20 @@ int build_file_line(char* line[], struct stat* file_stat, char* file_name){
 
     strtok(file_output, " ");
 
-    char* file_type = strktok(file_output, ",");
+    char* file_type = strtok(file_output, ",");
 
     line[0] = file_name;
     line[1] = file_type;
-    sprintf(line[2],"%d",(int)file_stat->st_size);          // file size
+    printf("ola1 \n");
+    sprintf(line[2],"%d",(int)file_stat->st_size/10000);          // file size
+    printf("ola \n");
     parse_permissions(file_stat->st_mode, line[3]);         // file permissions
     build_ISO8601_date(line[4],file_stat->st_atime);        // last access date
     build_ISO8601_date(line[5],file_stat->st_mtime);        // last modification date
                                                             // md5
                                                             // sha1
                                                             // sha256 
+    printf("%s, %s, %s \n",line[1],line[3],line[4]);
     return 0;
 }
 

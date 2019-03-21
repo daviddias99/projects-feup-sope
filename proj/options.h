@@ -29,7 +29,7 @@ struct options {
 extern char* optarg;
 
 int parse_options(int argc, char* argv[], struct options* options);
-int parse_fingerprints(char* fingerprints, struct options* options);
-bool check_argument(char* name);
+//int parse_fingerprints(char* fingerprints, struct options* options);
+//bool check_argument(char* name);
 
 #endif
