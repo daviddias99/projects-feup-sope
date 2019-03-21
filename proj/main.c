@@ -14,17 +14,22 @@ int main(int argc, char* argv[]){
     if(parse_options(argc, argv, &options) == 1)
         exit(2);
 
+    // testing for getting on line
     struct stat file_stats;
 
     if(stat(argv[argc-1],&file_stats) != 0)
         return -1;
     
-    //build_file_line();
+    // allocating space for one line
+    char** line = (char**) malloc(sizeof(char*) * 9);
 
+    for(int i = 0; i < 9; i++ )
+        *(line+i) = (char*) malloc(sizeof(char*) * 256);
 
+    memset(line,0,256*9);
 
-    get_file_info(argv[argc - 1]);
-    
+    // building the line
+    build_file_line(line,&file_stats);
 
     exit(0);
 }

@@ -7,6 +7,10 @@
 #include <wait.h>
 #include <sys/stat.h>
 #include <string.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <sys/types.h>
+#include <time.h>
 
 
 int get_cmd_output(char *args[], char* buf, size_t buf_size);
@@ -15,7 +19,7 @@ int get_file_info(char* path/* ,char* info*/);
 
 int build_file_line(char* line[], struct stat* file_stat);
 
-int parse_permissions(const mode_t* file_stat, char* permissions);
+int parse_permissions(mode_t file_stat, char* permissions);
 
-
+int build_ISO8601_date(char* date, time_t time);
 #endif 

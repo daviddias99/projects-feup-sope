@@ -36,7 +36,7 @@ static bool check_argument(char* name) {
 }
 
 
-int parse_options(int argc, char* argv[], struct options* options){
+int parse_options(int argc, char argv[], struct options* options){
     int opt;
 
     while((opt = getopt(argc, argv, "rh:o:v")) != -1){
