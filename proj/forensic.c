@@ -95,8 +95,19 @@ int build_ISO8601_date(char* date, time_t time){
     return 0;
 }
 
-int build_file_line(char* line[], struct stat* file_stat){
+int build_file_line(char* line[], struct stat* file_stat, char* file_name){
 
+    char* args[3] = {"file",file_name,NULL};
+ 
+    char* file_output = (char*) malloc(35 * sizeof(char));
+    get_cmd_output(args,file_output,35);
+
+    strtok(file_output, " ");
+
+    char* file_type = strktok(file_output, ",");
+
+    line[0] = file_name;
+    line[1] = file_type;
     sprintf(line[2],"%d",(int)file_stat->st_size);          // file size
     parse_permissions(file_stat->st_mode, line[3]);         // file permissions
     build_ISO8601_date(line[4],file_stat->st_atime);        // last access date
