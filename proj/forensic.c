@@ -28,7 +28,7 @@ struct OPTIONS {
 
 } options;
 
-bool check_output(char* name){
+bool check_argument(char* name){
     //char* extension;
 
     if(name[0] == '-')
@@ -75,25 +75,34 @@ int parse_options(int argc, char* argv[]){
 
             case 'h':
                 options.check_fingerprint = true;
-                parse_fingerprints(optarg);          
+
+                if(parse_fingerprints(optarg) != 0)
+                    return 1;         
+
                 break;
 
             case 'o':
                 options.output = true;
-                if(check_output(optarg))
+
+                if(check_argument(optarg))
                     options.output_file = optarg;
                 else
-                    return 1;
+                    return 2;
                 
                 break;
 
             case 'v':
                 options.logfile = true;
+
                 options.logfilename = getenv("LOGFILENAME");
+
+                if(options.logfilename == NULL)
+                    return 3;
+
                 break;
 
             default:
-                exit(69);
+                return 4;
         }
     }
 
