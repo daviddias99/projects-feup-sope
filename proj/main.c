@@ -25,20 +25,14 @@ int main(int argc, char* argv[]){
 
         // e um diretorio
 
+    }else{
+
+        // ficheiro normal
+
     }
 
+    char line[9][256];
 
-    // allocating space for one line
-    char** line = (char**) malloc(sizeof(char*) * 9);
-
-    for(int i = 0; i < 9; i++ )
-        *(line+i) = (char*) malloc(sizeof(char) * 256);
-
-    memset(line,0,256*9);
-
-    // building the line
-
-    // char* fileName = (char*) malloc(sizeof(char) * 256 );
     build_file_line(line,&file_stats,file_name);
 
     exit(0);
