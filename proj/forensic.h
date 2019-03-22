@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <time.h>
+#include <dirent.h>
 
 
 int get_cmd_output(char *args[], char* buf, size_t buf_size);

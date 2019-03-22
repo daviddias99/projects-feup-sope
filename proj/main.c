@@ -25,6 +25,8 @@ int main(int argc, char* argv[]){
 
         // e um diretorio
 
+        
+
     }else{
 
         // ficheiro normal
