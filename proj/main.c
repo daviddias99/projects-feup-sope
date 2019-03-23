@@ -33,9 +33,10 @@ int main(int argc, char* argv[]){
 
     }
 
-    char line[9][256];
+    char line[9][256] = {{0}};
 
-    build_file_line(line,&file_stats,file_name);
+    build_file_line(line,&file_stats,file_name,&options);
+    print_file_line(line, STDOUT_FILENO);
 
     exit(0);
 }

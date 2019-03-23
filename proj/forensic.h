@@ -12,13 +12,16 @@
 #include <sys/types.h>
 #include <time.h>
 #include <dirent.h>
+#include "options.h"
 
 
 int get_cmd_output(char *args[], char* buf, size_t buf_size);
 
 int get_file_info(char* path/* ,char* info*/);
 
-int build_file_line(char line[][256], struct stat* file_stat, char* file_name);
+int build_file_line(char line[9][256], const struct stat* file_stat, char* file_name, const struct options* opt);
+
+int print_file_line(char line[9][256],int fd);
 
 int parse_permissions(mode_t file_stat, char* permissions);
 
