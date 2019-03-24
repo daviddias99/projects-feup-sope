@@ -8,35 +8,24 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
-    struct options options;
-    options.fp_mask = 0;
+    struct options opt;
+    opt.fp_mask = 0;
 
-    if(parse_options(argc, argv, &options) == 1)
+    if(parse_options(argc, argv, &opt) == 1)
         exit(2);
 
-    // testing code of getting one line
-    struct stat file_stats;
-    char* file_name = argv[argc-1];
-
-    if(stat(file_name,&file_stats) != 0)
+    struct stat stat_buf;
+    
+    if(lstat(argv[argc - 1], &stat_buf) != 0)
         return -1;
     
-    if(S_ISDIR(file_stats.st_mode)){
-
-        // e um diretorio
-
-        
-
-    }else{
-
-        // ficheiro normal
-
+    if (S_ISDIR(stat_buf.st_mode)){
+        scan_directory(argv[argc-1], &opt);
+    } else {
+        build_file_line(&stat_buf, argv[argc - 1], &opt);
     }
+    
+    close(opt.output_fd);
 
-    char line[9][256] = {{0}};
-
-    build_file_line(line,&file_stats,file_name,&options);
-    print_file_line(line, STDOUT_FILENO);
-
-    exit(0);
+    return 0;
 }

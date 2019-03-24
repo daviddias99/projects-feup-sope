@@ -15,15 +15,20 @@
 #include "options.h"
 
 
+int scan_directory(char* path, const struct options* opt);
+
+
+
 int get_cmd_output(char *args[], char* buf, size_t buf_size);
 
 int get_file_info(char* path/* ,char* info*/);
 
-int build_file_line(char line[9][256], const struct stat* file_stat, char* file_name, const struct options* opt);
+int build_file_line(const struct stat* file_stat, char* file_name, const struct options* opt);
 
-int print_file_line(char line[9][256],int fd);
+int print_file_line(char* line[9], int fd);
 
-int parse_permissions(mode_t file_stat, char* permissions);
+int parse_permissions(char* permissions, mode_t file_stat);
 
 int build_ISO8601_date(char* date, time_t time);
+
 #endif 

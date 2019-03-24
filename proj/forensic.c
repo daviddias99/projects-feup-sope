@@ -3,30 +3,12 @@
 #define READ    0
 #define WRITE   1
 
+#define MD5_SIZE    32
+#define SHA1_SIZE   40
+#define SHA256_SIZE 64
 
-int get_file_info(char* path/* ,char* info*/) {
-
-    char* args[] = { "sha1sum", path, NULL };
-    char buf[128];
-
-    get_cmd_output(args, buf, 128);
-
-    printf("%s\n", buf);
-
-    args[0] = "sha256sum";
-
-    get_cmd_output(args, buf, 128);
-
-    printf("%s\n", buf);
-
-    args[0] = "file";
-
-    get_cmd_output(args, buf, 128);
-
-    printf("%s\n", buf);
-
-    return -1;
-}
+#define ISO_DATE_SIZE 19
+#define PERM_SIZE     3
 
 int get_cmd_output(char *args[], char* buf, size_t buf_size) {
 
@@ -56,13 +38,12 @@ int get_cmd_output(char *args[], char* buf, size_t buf_size) {
     return 0;
 }
 
-int parse_permissions(mode_t file_stat, char* permissions){
+int parse_permissions(char* permissions, mode_t file_stat) {
 
     size_t i = 0;
     permissions[i] = '-';
 
-    if(file_stat & S_IRUSR){
-
+    if (file_stat & S_IRUSR) {
         permissions[0] = 'r';
         i++;
     }
@@ -95,99 +76,100 @@ int build_ISO8601_date(char* date, time_t time){
     return 0;
 }
 
-int build_file_line(char line[9][256], const struct stat* file_stat, char* file_name, const struct options* opt){
+int build_file_line(const struct stat* file_stat, char* file_name, const struct options* opt) {
 
-
-    char* argsFILE[3] = {"file",file_name,NULL};
+    char* args[3] = { "file", file_name, NULL};
     char* file_output = (char*) malloc(64 * sizeof(char));
-
-    get_cmd_output(argsFILE,file_output,64);
-
+    get_cmd_output(args, file_output, 64);
     char* file_type = strtok(file_output, " ");
     file_type = strtok(NULL, ",");
 
-    free(file_output);
-    
-    if(opt->check_fingerprint){
+    char file_size[100];
+    sprintf(file_size, "%d", (int) file_stat->st_size);
 
-        if (opt->fp_mask & MD5_HASH)
-        {
-            char* argsMD5[3] = {"md5sum",file_name,NULL};
-            char *md5_output = (char *)malloc(33 * sizeof(char));
-            get_cmd_output(argsMD5, md5_output, 33);
-            char *md5 = strtok(md5_output, " ");
-            strcpy(line[6], md5); // md5
-            free(md5_output);
+    size_t line_size = strlen(file_name) + strlen(file_type) + strlen(file_size) + 
+                       2 * ISO_DATE_SIZE + PERM_SIZE + MD5_SIZE + SHA1_SIZE + SHA256_SIZE +
+                       10;
+    char* line = (char*) malloc(sizeof(char) * line_size);
+    //size_t i = 0;
+    line[0] = 0;
+
+    strcat(line, file_name);
+    strcat(line, ",");
+    strcat(line, file_type);
+    strcat(line, ",");                                  // file type
+    strcat(line, file_size);    
+    strcat(line, ",");   // file size
+    parse_permissions(line + strlen(line), file_stat->st_mode);         // file permissions
+    strcat(line, ",");    
+    build_ISO8601_date(line + strlen(line),file_stat->st_atime);        // last access date
+    strcat(line, ",");    
+    build_ISO8601_date(line + strlen(line),file_stat->st_mtime);        // last modification date
+
+    free(file_output);
+
+    
+
+    if (opt->check_fingerprint) {    
+
+        if (opt->fp_mask & MD5_HASH) {
+            args[0] = "md5sum";
+            //char md5_output[MD5_SIZE + 1];
+            strcat(line, ",");    
+            get_cmd_output(args, line + strlen(line), MD5_SIZE + 1);
+            /*
+            printf("%s\n", md5_output);
+
+            printf("%s\n", line[i]);*/
+
+            
         }
 
         if (opt->fp_mask & SHA1_HASH)
         {
-            char* argsSHA1[3] = {"sha1sum",file_name,NULL};
-            char *sha1_output = (char *)malloc(41 * sizeof(char));
-            get_cmd_output(argsSHA1, sha1_output, 41);
-            char *sha1 = strtok(sha1_output, " ");
-            strcpy(line[7], sha1); // sha1
-            free(sha1_output);
+            args[0] = "sha1sum";
+            //char md5_output[MD5_SIZE + 1];
+            strcat(line, ",");    
+            get_cmd_output(args, line + strlen(line), SHA1_SIZE + 1);
         }
 
         if (opt->fp_mask & SHA256_HASH)
         {
-            char* argsSHA256[3] = {"sha256sum",file_name,NULL};
-            char *sha256_output = (char *)malloc(65 * sizeof(char));
-            get_cmd_output(argsSHA256, sha256_output, 65);
-            char *sha256 = strtok(sha256_output, " ");
-            strcpy(line[8], sha256); // sha256
-            free(sha256_output);
+            args[0] = "sha256sum";
+            //char md5_output[MD5_SIZE + 1];
+            strcat(line, ",");    
+            get_cmd_output(args, line + strlen(line), SHA256_SIZE + 1);
+        }
+    }
+   
+    strcat(line, "\n");
+    write(opt->output_fd, line, strlen(line));
+    free(line);
+
+    return 0;
+}
+
+int scan_directory(char* path, const struct options* opt) {
+    DIR* dirp;
+    struct dirent* direntp;
+    
+    if ((dirp = opendir(path)) == NULL) {
+        perror(path);
+        exit(2);
+    }
+    while ((direntp = readdir(dirp)) != NULL) {   
+        struct stat stat_buf;
+    
+        if(lstat(direntp->d_name, &stat_buf) != 0)
+            return -1;
+
+        if (S_ISDIR(stat_buf.st_mode)) {
+            // TODO scan directory in a new process
+        } else {
+            build_file_line(&stat_buf, direntp->d_name, opt);
         }
     }
 
-    strcpy(line[0],file_name);                              // file name
-    strcpy(line[1],file_type);                              // file type
-    sprintf(line[2],"%d",(int)file_stat->st_size);          // file size
-    parse_permissions(file_stat->st_mode, line[3]);         // file permissions
-    build_ISO8601_date(line[4],file_stat->st_atime);        // last access date
-    build_ISO8601_date(line[5],file_stat->st_mtime);        // last modification date
-
-    // printf("%s - %s - %s - %s - %s - %s - %s - %s - %s \n",line[0],line[1],line[2],line[3],line[4],line[5],line[6],line[7],line[8]);
+    closedir(dirp);
     return 0;
 }
-
-int print_file_line(char line[9][256],int fd){
-
-    write(fd,line[0],strlen(line[0]));
-    write(fd,", ",2);
-    write(fd,line[1],strlen(line[1]));
-    write(fd,", ",2);
-    write(fd,line[2],strlen(line[2]));
-    write(fd,", ",2);
-    write(fd,line[3],strlen(line[3]));
-    write(fd,", ",2);
-    write(fd,line[4],strlen(line[4]));
-    write(fd,", ",2);
-    write(fd,line[5],strlen(line[5]));
-    write(fd,", ",2);
-
-    if(line[6][0] != '\0'){
-
-        write(fd,line[6],strlen(line[6]));
-
-        if(line[7][0] != '\0' || line[8][0] != '\0')
-            write(fd,", ",2);
-    }
-        
-    if(line[7][0] != '\0'){
-        write(fd,line[7],strlen(line[7]));
-
-        if(line[8][0] != '\0')
-            write(fd,", ",2);
-    }
-
-    if(line[8][0] != '\0'){
-        write(fd,line[8],strlen(line[8]));
-    }
-    
-    write(fd, "\n",1);
-
-    return 0;
-}
-

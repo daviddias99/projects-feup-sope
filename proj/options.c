@@ -58,8 +58,14 @@ int parse_options(int argc, char* argv[], struct options* options){
             case 'o':
                 options->output = true;
 
-                if(check_argument(optarg))
+                if(check_argument(optarg)) {
                     options->output_file = optarg;
+                    options->output_fd = open(optarg, O_WRONLY | O_CREAT | O_EXCL, OUTPUT_OPEN_MODE);
+                    if (options->output_fd == -1) {
+                        perror("output file open");
+                        exit(3);
+                    }
+                }
                 else
                     return 2;
                 
@@ -79,6 +85,9 @@ int parse_options(int argc, char* argv[], struct options* options){
                 return 4;
         }
     }
+
+    if (! options->output)
+        options->output_fd = STDOUT_FILENO;
 
     return 0;
 }

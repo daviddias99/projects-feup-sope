@@ -4,17 +4,19 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <limits.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 
 #define BIT(n)              (0x01<<(n))
 #define MD5_HASH            (BIT(2))
 #define SHA1_HASH           (BIT(1))
 #define SHA256_HASH         (BIT(0))
+
+#define OUTPUT_OPEN_MODE    0644
 
 struct options {
     bool check_subdir;
@@ -24,6 +26,7 @@ struct options {
     bool output;
     char* output_file;
     uint8_t fp_mask;
+    int output_fd;
 };
 
 extern char* optarg;
