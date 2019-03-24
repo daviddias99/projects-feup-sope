@@ -23,11 +23,13 @@ struct options {
     bool check_fingerprint;
     bool logfile;
     char* logfilename;
+    int logfilename_fd;
     bool output;
     char* output_file;
     uint8_t fp_mask;
     int output_fd;
     char* base_directory;
+    double init_time;
 };
 
 extern char* optarg;

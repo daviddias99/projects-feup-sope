@@ -78,6 +78,13 @@ int parse_options(int argc, char* argv[], struct options* options){
 
                 if(options->logfilename == NULL)
                     return 3;
+                else
+                    options->logfilename_fd = open(options->logfilename, O_WRONLY | O_CREAT | O_EXCL, OUTPUT_OPEN_MODE);
+                
+                if(options->logfilename_fd == -1) {
+                        perror("Log file open");
+                        exit(3);
+                }
 
                 break;
 

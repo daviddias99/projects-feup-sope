@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <time.h>
 #include <dirent.h>
 #include "options.h"
@@ -17,7 +18,7 @@
 
 int scan_directory(char* path, const struct options* opt);
 
-
+int reg_execution(pid_t pid, const struct options* opt);
 
 int get_cmd_output(char *args[], char* buf, size_t buf_size);
 

@@ -11,6 +11,11 @@ int main(int argc, char* argv[]){
     struct options opt;
     opt.fp_mask = 0;
 
+    struct timespec start;
+    clock_gettime(CLOCK_REALTIME, &start);
+
+    opt.init_time = start.tv_sec*1000 + start.tv_nsec/1000000;
+
     if (parse_options(argc, argv, &opt) == 1)
         exit(2);
 
@@ -23,6 +28,7 @@ int main(int argc, char* argv[]){
         scan_directory(argv[argc-1], &opt);
     } else {
         build_file_line(&stat_buf, argv[argc - 1], &opt);
+        reg_execution(getpid() , &opt);
     }
     
     close(opt.output_fd);

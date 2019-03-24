@@ -152,6 +152,27 @@ int build_file_line(const struct stat* file_stat, char* file_name, const struct 
     return 0;
 }
 
+int reg_execution(pid_t pid, const struct options* opt){
+    
+    if(!opt->logfile)
+        return 0;
+
+    char* line = (char*) malloc(sizeof(char) * 100);
+    line[0] = 0;
+
+    struct timespec current;
+    clock_gettime(CLOCK_REALTIME, &current);
+
+    long double curr_time = current.tv_sec*1000 + current.tv_nsec/1000000;
+
+    sprintf(line, "%.10Lfms - %08d\n", curr_time - opt->init_time, pid);
+    
+    lseek(opt->logfilename_fd, 0, SEEK_END);
+    write(opt->logfilename_fd, line, strlen(line));
+    
+    return 0;
+}
+
 int scan_directory(char* path, const struct options* opt) {
     DIR* dirp;
     struct dirent* direntp;
@@ -186,6 +207,7 @@ int scan_directory(char* path, const struct options* opt) {
             }
         } else {
             build_file_line(&stat_buf, fpath, opt);
+            reg_execution(getpid() , opt);
         }
     }
 
