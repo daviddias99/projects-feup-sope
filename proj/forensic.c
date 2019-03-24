@@ -163,9 +163,9 @@ int reg_execution(pid_t pid, const struct options* opt){
     struct timespec current;
     clock_gettime(CLOCK_REALTIME, &current);
 
-    long double curr_time = current.tv_sec*1000 + current.tv_nsec/1000000;
+    long double curr_time = current.tv_sec*1000 + (long double) current.tv_nsec/1000000;
 
-    sprintf(line, "%.10Lfms - %08d\n", curr_time - opt->init_time, pid);
+    sprintf(line, "%.2Lfms - %08d\n", curr_time - opt->init_time, pid);
     
     lseek(opt->logfilename_fd, 0, SEEK_END);
     write(opt->logfilename_fd, line, strlen(line));
