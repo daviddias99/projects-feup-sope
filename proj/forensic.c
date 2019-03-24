@@ -145,6 +145,7 @@ int build_file_line(const struct stat* file_stat, char* file_name, const struct 
     }
    
     strcat(line, "\n");
+    lseek(opt->output_fd, 0, SEEK_END);
     write(opt->output_fd, line, strlen(line));
     free(line);
 
@@ -170,15 +171,19 @@ int scan_directory(char* path, const struct options* opt) {
             return -1;
 
         if (S_ISDIR(stat_buf.st_mode)) {
-            /*
-            if (opt->check_subdir) {
+            
+            if (opt->check_subdir) { 
+
+                if (strcmp(direntp->d_name, ".") == 0 || strcmp(direntp->d_name, "..") == 0)
+                    continue;
+
                 int pid = fork();
                 if (pid == -1) {
                     exit(5);
                 } else if (pid == 0) {
-                    return scan_directory(direntp->d_name, opt);
+                    return scan_directory(fpath, opt);
                 }
-            }*/
+            }
         } else {
             build_file_line(&stat_buf, fpath, opt);
         }
