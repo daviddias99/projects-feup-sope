@@ -145,7 +145,7 @@ int build_file_line(const struct stat* file_stat, char* file_name, const struct 
 
     char* action = (char*) malloc(sizeof(char) * 50 + sizeof(file_name));
 
-    sprintf(action, "Analized %s", file_name);
+    sprintf(action, "Analized %s", file_name + strlen(opt->base_directory) + 1);
     reg_execution(getpid(), action, opt);
 
    
