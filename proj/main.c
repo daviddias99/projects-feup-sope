@@ -11,12 +11,12 @@ int main(int argc, char* argv[]){
     struct options opt;
     opt.fp_mask = 0;
 
-    if(parse_options(argc, argv, &opt) == 1)
+    if (parse_options(argc, argv, &opt) == 1)
         exit(2);
 
     struct stat stat_buf;
     
-    if(lstat(argv[argc - 1], &stat_buf) != 0)
+    if (lstat(argv[argc - 1], &stat_buf) != 0)
         return -1;
     
     if (S_ISDIR(stat_buf.st_mode)){

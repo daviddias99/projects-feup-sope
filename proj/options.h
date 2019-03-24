@@ -27,6 +27,7 @@ struct options {
     char* output_file;
     uint8_t fp_mask;
     int output_fd;
+    char* base_directory;
 };
 
 extern char* optarg;

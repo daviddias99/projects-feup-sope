@@ -87,14 +87,16 @@ int build_file_line(const struct stat* file_stat, char* file_name, const struct 
     char file_size[100];
     sprintf(file_size, "%d", (int) file_stat->st_size);
 
-    size_t line_size = strlen(file_name) + strlen(file_type) + strlen(file_size) + 
+
+
+    size_t line_size = strlen(file_name) - strlen(opt->base_directory) + strlen(file_type) + strlen(file_size) + 
                        2 * ISO_DATE_SIZE + PERM_SIZE + MD5_SIZE + SHA1_SIZE + SHA256_SIZE +
                        10;
     char* line = (char*) malloc(sizeof(char) * line_size);
     //size_t i = 0;
     line[0] = 0;
 
-    strcat(line, file_name);
+    strcat(line, file_name + strlen(opt->base_directory) + 1);
     strcat(line, ",");
     strcat(line, file_type);
     strcat(line, ",");                                  // file type
@@ -152,21 +154,33 @@ int build_file_line(const struct stat* file_stat, char* file_name, const struct 
 int scan_directory(char* path, const struct options* opt) {
     DIR* dirp;
     struct dirent* direntp;
-    
+    char fpath[257];
+
+
     if ((dirp = opendir(path)) == NULL) {
         perror(path);
         exit(2);
     }
     while ((direntp = readdir(dirp)) != NULL) {   
         struct stat stat_buf;
-    
-        if(lstat(direntp->d_name, &stat_buf) != 0)
+        sprintf(fpath, "%s/%s", path, direntp->d_name);
+
+
+        if (lstat(fpath, &stat_buf) != 0)
             return -1;
 
         if (S_ISDIR(stat_buf.st_mode)) {
-            // TODO scan directory in a new process
+            /*
+            if (opt->check_subdir) {
+                int pid = fork();
+                if (pid == -1) {
+                    exit(5);
+                } else if (pid == 0) {
+                    return scan_directory(direntp->d_name, opt);
+                }
+            }*/
         } else {
-            build_file_line(&stat_buf, direntp->d_name, opt);
+            build_file_line(&stat_buf, fpath, opt);
         }
     }
 

@@ -89,6 +89,8 @@ int parse_options(int argc, char* argv[], struct options* options){
     if (! options->output)
         options->output_fd = STDOUT_FILENO;
 
+    options->base_directory = argv[argc - 1];
+
     return 0;
 }
 
