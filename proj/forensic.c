@@ -93,7 +93,6 @@ int build_file_line(const struct stat* file_stat, char* file_name, const struct 
                        2 * ISO_DATE_SIZE + PERM_SIZE + MD5_SIZE + SHA1_SIZE + SHA256_SIZE +
                        10;
     char* line = (char*) malloc(sizeof(char) * line_size);
-    //size_t i = 0;
     line[0] = 0;
 
     strcat(line, file_name + strlen(opt->base_directory) + 1);
@@ -143,32 +142,39 @@ int build_file_line(const struct stat* file_stat, char* file_name, const struct 
             get_cmd_output(args, line + strlen(line), SHA256_SIZE + 1);
         }
     }
+
+    char* action = (char*) malloc(sizeof(char) * 50 + sizeof(file_name));
+
+    sprintf(action, "Analized %s", file_name);
+    reg_execution(getpid(), action, opt);
+
    
     strcat(line, "\n");
     lseek(opt->output_fd, 0, SEEK_END);
     write(opt->output_fd, line, strlen(line));
     free(line);
+    free(action);
 
     return 0;
 }
 
-int reg_execution(pid_t pid, const struct options* opt){
+int reg_execution(pid_t pid, char* act, const struct options* opt){
     
     if(!opt->logfile)
         return 0;
 
-    char* line = (char*) malloc(sizeof(char) * 100);
-    line[0] = 0;
+    char* reg = (char*) malloc(sizeof(char) * 100);
 
     struct timespec current;
     clock_gettime(CLOCK_REALTIME, &current);
 
     long double curr_time = current.tv_sec*1000 + (long double) current.tv_nsec/1000000;
 
-    sprintf(line, "%.2Lfms - %08d\n", curr_time - opt->init_time, pid);
+    sprintf(reg, "%.2Lfms - %08d - %s\n", curr_time - opt->init_time, pid, act);
     
     lseek(opt->logfilename_fd, 0, SEEK_END);
-    write(opt->logfilename_fd, line, strlen(line));
+    write(opt->logfilename_fd, reg, strlen(reg));
+    free(reg);
     
     return 0;
 }
@@ -207,7 +213,6 @@ int scan_directory(char* path, const struct options* opt) {
             }
         } else {
             build_file_line(&stat_buf, fpath, opt);
-            reg_execution(getpid() , opt);
         }
     }
 

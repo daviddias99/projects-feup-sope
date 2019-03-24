@@ -11,6 +11,7 @@ int main(int argc, char* argv[]){
     struct options opt;
     opt.fp_mask = 0;
 
+    // TODO: Possivelmente fazer uma função dedicada a inicializar o tempo
     struct timespec start;
     clock_gettime(CLOCK_REALTIME, &start);
 
@@ -28,7 +29,6 @@ int main(int argc, char* argv[]){
         scan_directory(argv[argc-1], &opt);
     } else {
         build_file_line(&stat_buf, argv[argc - 1], &opt);
-        reg_execution(getpid() , &opt);
     }
     
     close(opt.output_fd);
