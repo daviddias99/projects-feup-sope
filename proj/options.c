@@ -23,14 +23,22 @@ static int parse_fingerprints(char* fingerprints, struct options* options) {
 }
 
 static bool check_argument(char* name) {
-    //char* extension;
 
     if(name[0] == '-')
         return false;
 
-    //extension = strstr(name, ".csv");
+    char* token = strtok(name, ".");
 
-    //TODO: Further extension verification
+    token = strtok(NULL, ".");
+
+    // Checks if it has a valid extension (strcmp returns 0 if equal)
+    if(strcmp(token, "csv") && strcmp(token, "txt"))
+        return false;
+
+
+    // Checks if file name is valid
+    if((token = strtok(NULL, ".")) != NULL)
+        return false;
 
     return true;
 }

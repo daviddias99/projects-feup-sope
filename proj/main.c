@@ -17,7 +17,7 @@ int main(int argc, char* argv[]){
 
     opt.init_time = start.tv_sec*1000 + start.tv_nsec/1000000;
 
-    if (parse_options(argc, argv, &opt) == 1)
+    if (parse_options(argc, argv, &opt) != 0)
         exit(2);
 
     struct stat stat_buf;
