@@ -14,6 +14,7 @@
 #include <time.h>
 #include <dirent.h>
 #include "options.h"
+#include <signal.h>
 
 
 int scan_directory(char* path, const struct options* opt);
@@ -31,5 +32,11 @@ int print_file_line(char* line[9], int fd);
 int parse_permissions(char* permissions, mode_t file_stat);
 
 int build_ISO8601_date(char* date, time_t time);
+
+void usr_signal_handler(int signo);
+
+int get_file_cnt();
+
+int get_dir_cnt();
 
 #endif 
