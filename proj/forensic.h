@@ -16,6 +16,8 @@
 #include "options.h"
 #include <signal.h>
 
+#define SEC_TO_MIL(a)                 (a*1000)
+#define NANO_TO_MIL(a)                a/1000000;
 
 int scan_directory(char* path, const struct options* opt);
 

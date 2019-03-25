@@ -12,6 +12,9 @@
 #define MAX_FILE_SIZE_LEN             100
 #define MAX_FILE_INFO_SIZE            64
 #define MAX_FILE_PATH_SIZE            257
+#define MAX_FILE_LOG_LINE_SIZE        100 // please change the name of this macro
+#define SEC_TO_MIL(a)                 (a*1000)
+#define NANO_TO_MIL(a)                a/1000000;
 
 int get_cmd_output(char *args[], char *buf, size_t buf_size)
 {
@@ -178,12 +181,13 @@ int reg_execution(pid_t pid, char *act, const struct options *opt)
     if (!opt->logfile)
         return 0;
 
-    char *reg = (char *)malloc(sizeof(char) * 100);
+    char *reg = (char *)malloc(sizeof(char) * MAX_FILE_LOG_LINE_SIZE);
 
     struct timespec current;
     clock_gettime(CLOCK_REALTIME, &current);
 
-    long double curr_time = current.tv_sec * 1000 + (long double)current.tv_nsec / 1000000;
+    //long double curr_time = current.tv_sec * 1000 + (long double)current.tv_nsec / 1000000;
+    long double curr_time = SEC_TO_MIL(current.tv_sec) + NANO_TO_MIL((long double)current.tv_nsec);
 
     sprintf(reg, "%.2Lfms - %08d - %s\n", curr_time - opt->init_time, pid, act);
 
