@@ -13,8 +13,7 @@
 #define MAX_FILE_INFO_SIZE            64
 #define MAX_FILE_PATH_SIZE            257
 #define MAX_FILE_LOG_LINE_SIZE        100 // please change the name of this macro
-#define SEC_TO_MIL(a)                 (a*1000)
-#define NANO_TO_MIL(a)                a/1000000;
+
 
 int get_cmd_output(char *args[], char *buf, size_t buf_size)
 {
