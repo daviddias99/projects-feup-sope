@@ -97,6 +97,9 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
 
     char *args[3] = {"file", file_name, NULL};
 
+    // signal new file
+    raise(SIGUSR2);
+
     // get the "file" system command output and extract the file type
 
     char *file_output = (char *)malloc(MAX_FILE_INFO_SIZE * sizeof(char));
@@ -203,6 +206,8 @@ int scan_directory(char *path, const struct options *opt)
     DIR *dirp;
     struct dirent *direntp;
     char fpath[MAX_FILE_PATH_SIZE];
+
+    raise(SIGUSR1);
 
     if ((dirp = opendir(path)) == NULL)
     {
