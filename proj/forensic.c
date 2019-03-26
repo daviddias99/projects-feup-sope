@@ -124,9 +124,9 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
     memset(line, 0, line_size);
     
     int file_name_offset;
-    S_ISDIR(file_stat->st_mode) ? (file_name_offset = strlen(opt->base_directory) + 1) : (file_name_offset = 0);
+    (strcmp(file_name,opt->base_directory) != 0) ? (file_name_offset = strlen(opt->base_directory) + 1) : (file_name_offset = 0);
 
-    strcat(line, file_name + strlen(opt->base_directory) + 1);          // file name
+    strcat(line, file_name + file_name_offset);                         // file name
     strcat(line, ",");
     strcat(line, file_type);                                            // file type
     strcat(line, ",");
@@ -271,7 +271,7 @@ void usr_signal_handler(int signo)
 
     if (signo == SIGUSR1){
         dir_cnt++;
-        printf("New directory: %d/%d directories/files at this time. \n",dir_cnt,file_cnt);
+        // printf("New directory: %d/%d directories/files at this time. \n",dir_cnt,file_cnt);
     }
     else if (signo == SIGUSR2){
 

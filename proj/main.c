@@ -3,6 +3,8 @@
 
 int main(int argc, char* argv[]){
 
+    print_dbg("_-_-_-_-_ main executed \n");
+
     if (argc < 2) {
         fprintf( stderr, "Usage: %s dir_name\n", argv[0]);
         exit(1);
@@ -36,12 +38,10 @@ int main(int argc, char* argv[]){
     if (S_ISDIR(stat_buf.st_mode)){
         scan_directory(argv[argc-1], &opt);
     } else {
-
-        opt.base_directory = "";
         build_file_line(&stat_buf, argv[argc - 1], &opt);
     }
     
-    //printf("--- DIRCNT %d | FILECNT %d \n", get_dir_cnt(),get_file_cnt());
+    // printf("--- DIRCNT %d | FILECNT %d \n", get_dir_cnt(),get_file_cnt());
 
     close(opt.output_fd);
 
