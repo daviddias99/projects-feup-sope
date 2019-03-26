@@ -15,6 +15,7 @@
 #include <dirent.h>
 #include "options.h"
 #include <signal.h>
+#include "debug.h"
 
 #define SEC_TO_MIL(a)                 (a*1000)
 #define NANO_TO_MIL(a)                a/1000000;
