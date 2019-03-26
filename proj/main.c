@@ -36,6 +36,8 @@ int main(int argc, char* argv[]){
     if (S_ISDIR(stat_buf.st_mode)){
         scan_directory(argv[argc-1], &opt);
     } else {
+
+        opt.base_directory = "";
         build_file_line(&stat_buf, argv[argc - 1], &opt);
     }
     

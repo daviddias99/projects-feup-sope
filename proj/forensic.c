@@ -123,8 +123,8 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
     char *line = (char *)malloc(sizeof(char) * line_size);
     memset(line, 0, line_size);
     
-    // int file_name_offset;
-    // S_ISDIR(file_stat->st_mode) ? (file_name_offset = strlen(opt->base_directory) + 1) : (file_name_offset = 0);
+    int file_name_offset;
+    S_ISDIR(file_stat->st_mode) ? (file_name_offset = strlen(opt->base_directory) + 1) : (file_name_offset = 0);
 
     strcat(line, file_name + strlen(opt->base_directory) + 1);          // file name
     strcat(line, ",");
