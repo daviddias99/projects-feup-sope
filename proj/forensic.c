@@ -98,7 +98,9 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
     char *args[3] = {"file", file_name, NULL};
 
     // signal new file found
-    raise(SIGUSR2);
+
+    if(opt->output)
+        raise(SIGUSR2);
     
     // get the "file" system command output and extract the file type
 
@@ -213,7 +215,8 @@ int scan_directory(char *path, const struct options *opt)
     struct dirent *direntp;
     char fpath[MAX_FILE_PATH_SIZE];
 
-    raise(SIGUSR1);
+    if(opt->output)
+        raise(SIGUSR1);
 
     if ((dirp = opendir(path)) == NULL)
     {
@@ -255,6 +258,9 @@ int scan_directory(char *path, const struct options *opt)
         {
             build_file_line(&stat_buf, fpath, opt);
             
+            if(program_is_term())
+                break;
+
         }
     }
 
@@ -264,6 +270,7 @@ int scan_directory(char *path, const struct options *opt)
 
 int dir_cnt = 0;
 int file_cnt = 0;
+int kill_program = 0;
 
 void usr_signal_handler(int signo)
 {
@@ -277,6 +284,16 @@ void usr_signal_handler(int signo)
         file_cnt++;
     }
         
+}
+
+void int_signal_handler(int signo){
+
+    kill_program = 1;
+}
+
+int program_is_term(){
+
+    return kill_program;
 }
 
 int get_file_cnt()

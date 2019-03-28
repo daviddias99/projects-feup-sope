@@ -38,8 +38,12 @@ int build_ISO8601_date(char* date, time_t time);
 
 void usr_signal_handler(int signo);
 
+void int_signal_handler(int signo);
+
 int get_file_cnt();
 
 int get_dir_cnt();
+
+int program_is_term();
 
 #endif 

@@ -30,6 +30,11 @@ int main(int argc, char* argv[]){
     sigaction(SIGUSR1,&sigact,NULL);
     sigaction(SIGUSR2,&sigact,NULL);
 
+    sigemptyset(&sigact.sa_mask);
+    sigact.sa_flags = SA_RESTART;
+    sigact.sa_handler;
+    sigaction(SIGINT,&sigact,NULL);
+
     struct stat stat_buf;
     
     if (lstat(argv[argc - 1], &stat_buf) != 0)
