@@ -232,7 +232,6 @@ int scan_directory(char *path, const struct options *opt)
 
         if (S_ISDIR(stat_buf.st_mode))
         {
-            
             if (opt->check_subdir)
             {
                 

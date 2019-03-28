@@ -44,8 +44,20 @@ static bool check_argument(char* name) {
 }
 
 
+void clear_options_struct(struct options* options){
+
+    options->check_subdir = false;
+    options->check_fingerprint = false;
+    options->logfile = false;
+    options->output = false;
+
+    return ;
+}
+
 int parse_options(int argc, char* argv[], struct options* options){
     int opt;
+
+    clear_options_struct(options);
 
     while((opt = getopt(argc, argv, "rh:o:v")) != -1){
 

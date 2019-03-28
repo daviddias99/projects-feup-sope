@@ -3,8 +3,6 @@
 
 int main(int argc, char* argv[]){
 
-    print_dbg("_-_-_-_-_ main executed \n");
-
     if (argc < 2) {
         fprintf( stderr, "Usage: %s dir_name\n", argv[0]);
         exit(1);
@@ -22,6 +20,8 @@ int main(int argc, char* argv[]){
 
     if (parse_options(argc, argv, &opt) != 0)
         exit(2);
+
+    // signal setup
 
     struct sigaction sigact;
     sigemptyset(&sigact.sa_mask);
