@@ -30,6 +30,7 @@ struct options {
     int output_fd;
     char* base_directory;
     double init_time;
+    char** argv;
 };
 
 extern char* optarg;
