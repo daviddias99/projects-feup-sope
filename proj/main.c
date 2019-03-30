@@ -46,7 +46,8 @@ int main(int argc, char* argv[]){
         build_file_line(&stat_buf, argv[argc - 1], &opt);
     }
     
-    // printf("--- DIRCNT %d | FILECNT %d \n", get_dir_cnt(),get_file_cnt());
+    if(opt.process_root_pid == getpid())
+        printf("--- DIRCNT %d | FILECNT %d \n", get_dir_cnt(),get_file_cnt());
 
     close(opt.output_fd);
 

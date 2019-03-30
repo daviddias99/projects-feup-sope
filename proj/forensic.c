@@ -100,7 +100,8 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
     // signal new file found
 
     if(opt->output)
-        raise(SIGUSR2);
+        kill(opt->process_root_pid,SIGUSR2);
+
     
     // get the "file" system command output and extract the file type
 
@@ -216,8 +217,8 @@ int scan_directory(char *path, const struct options *opt)
     char fpath[MAX_FILE_PATH_SIZE];
 
     if(opt->output)
-        raise(SIGUSR1);
-
+        kill(opt->process_root_pid,SIGUSR1);
+        
     if ((dirp = opendir(path)) == NULL)
     {
         perror(path);
@@ -263,6 +264,8 @@ int scan_directory(char *path, const struct options *opt)
 
         }
     }
+
+
 
     closedir(dirp);
     return 0;

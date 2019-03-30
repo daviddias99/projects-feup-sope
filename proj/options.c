@@ -73,6 +73,7 @@ int parse_options(int argc, char* argv[], struct options* options){
     clear_options_struct(options);
 
     options->argv = argv;
+    options->process_root_pid = getpid();
 
     while((opt = getopt(argc, argv, "rh:o:v")) != -1){
 

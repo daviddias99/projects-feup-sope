@@ -31,6 +31,7 @@ struct options {
     char* base_directory;
     double init_time;
     char** argv;
+    pid_t process_root_pid;
 };
 
 extern char* optarg;
