@@ -288,7 +288,9 @@ void usr_signal_handler(int signo)
 
 void int_signal_handler(int signo){
 
-    kill_program = 1;
+    if(signo == SIGTERM)
+        kill_program = 1;
+    
 }
 
 int program_is_term(){
