@@ -215,7 +215,7 @@ int scan_directory(char *path, const struct options *opt)
     DIR *dirp;
     struct dirent *direntp;
     char fpath[MAX_FILE_PATH_SIZE];
-
+    
     if(opt->output)
         kill(opt->process_root_pid,SIGUSR1);
         
