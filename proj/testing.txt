@@ -1,5 +1,0 @@
-test.txt,ASCII text,5,rw,2019-03-30T13:58:37,2019-03-26T12:52:23
-exec,ELF 64-bit LSB shared object,18760,rwx,2019-03-30T13:58:37,2019-03-26T12:54:00
-testing.c,C++ source,108,rw,2019-03-30T13:58:37,2019-03-26T12:53:24
-subfolder/file_sub.h,C source,170,rw,2019-03-30T13:58:58,2019-03-26T12:56:23
-subfolder/subfolder 2/subsub.txt,2/subsub.txt: ASCII text,18,rw,2019-03-30T13:58:58,2019-03-26T12:56:38

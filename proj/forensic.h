@@ -18,11 +18,11 @@
 #include "debug.h"
 
 #define SEC_TO_MIL(a)                 (a*1000)
-#define NANO_TO_MIL(a)                a/1000000;
+#define NANO_TO_MIL(a)                (a/1000000)
 
 int scan_directory(char* path, const struct options* opt);
 
-int reg_execution(pid_t pid, char* act, const struct options* opt);
+int reg_execution(char* act, const struct options* opt);
 
 int get_cmd_output(char *args[], char* buf, size_t buf_size);
 
@@ -35,6 +35,8 @@ int print_file_line(char* line[9], int fd);
 int parse_permissions(char* permissions, mode_t file_stat);
 
 int build_ISO8601_date(char* date, time_t time);
+
+int setup_signals();
 
 void usr_signal_handler(int signo);
 

@@ -10,9 +10,9 @@
 #define PERM_SIZE                     3
 #define COMMA_CNT                     10
 #define MAX_FILE_SIZE_LEN             100
-#define MAX_FILE_INFO_SIZE            500
-#define MAX_FILE_PATH_SIZE            257
-#define MAX_FILE_LOG_LINE_SIZE        100 // please change the name of this macro
+#define MAX_FILE_INFO_SIZE            600
+#define MAX_FILE_PATH_SIZE            600
+#define MAX_FILE_LOG_LINE_SIZE        250 // please change the name of this macro
 
 
 int get_cmd_output(char *args[], char *buf, size_t buf_size)
@@ -95,22 +95,24 @@ int build_ISO8601_date(char *date, time_t time)
 int build_file_line(const struct stat *file_stat, char *file_name, const struct options *opt)
 {
 
-    char *args[3] = {"file", file_name, NULL};
+    char *args[5] = {"file", file_name, "--brief", "--preserve-date", NULL};
 
     // signal new file found
 
-    if(opt->output)
+    if(opt->output){
+
         kill(opt->process_root_pid,SIGUSR2);
+        reg_execution("SIGNAL USR2",opt);
+    }
+
 
     
     // get the "file" system command output and extract the file type
 
     char *file_output = (char *)malloc(MAX_FILE_INFO_SIZE * sizeof(char));
     get_cmd_output(args, file_output, MAX_FILE_INFO_SIZE);
-    char *file_type = strtok(file_output, " ");
+    char *file_type = strtok(file_output, ",");
 
-
-    file_type = strtok(NULL, ",");
     
     // extract the file's size in bytes
 
@@ -148,6 +150,7 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
         if (opt->fp_mask & MD5_HASH)
         {
             args[0] = "md5sum";
+            args[2] = NULL;
             strcat(line, ",");
             get_cmd_output(args, line + strlen(line), MD5_SIZE + 1);
         }
@@ -176,7 +179,7 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
     // action logging
     char *action = (char *)malloc(sizeof(char) * 50 + sizeof(file_name));
     sprintf(action, "Analized %s", file_name + strlen(opt->base_directory) + 1);
-    reg_execution(getpid(), action, opt);
+    reg_execution(action, opt);
     
     // free allocated memory
     free(line);
@@ -186,9 +189,8 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
     return 0;
 }
 
-int reg_execution(pid_t pid, char *act, const struct options *opt)
+int reg_execution(char *act, const struct options *opt)
 {
-
     if (!opt->logfile)
         return 0;
 
@@ -200,7 +202,7 @@ int reg_execution(pid_t pid, char *act, const struct options *opt)
     //long double curr_time = current.tv_sec * 1000 + (long double)current.tv_nsec / 1000000;
     long double curr_time = SEC_TO_MIL(current.tv_sec) + NANO_TO_MIL((long double)current.tv_nsec);
 
-    sprintf(reg, "%.2Lfms - %08d - %s\n", curr_time - opt->init_time, pid, act);
+    sprintf(reg, "%5.2Lf ms - %08d - %s\n", curr_time - opt->init_time, getpid(), act);
 
     lseek(opt->logfilename_fd, 0, SEEK_END);
     write(opt->logfilename_fd, reg, strlen(reg));
@@ -215,9 +217,14 @@ int scan_directory(char *path, const struct options *opt)
     DIR *dirp;
     struct dirent *direntp;
     char fpath[MAX_FILE_PATH_SIZE];
+    int childCnt = 0;
     
-    if(opt->output)
+    if(opt->output){
+
         kill(opt->process_root_pid,SIGUSR1);
+        reg_execution("SIGNAL USR1",opt);
+    }
+        
         
     if ((dirp = opendir(path)) == NULL)
     {
@@ -243,13 +250,15 @@ int scan_directory(char *path, const struct options *opt)
                     continue;
                 
                 pid_t pid = fork();
-                
+                childCnt++;
+
                 if (pid == -1)
                 {
                     exit(5);
                 }
                 else if (pid == 0)
-                {
+                {   
+                    
                     return scan_directory(fpath, opt);
                 }
                 
@@ -265,7 +274,11 @@ int scan_directory(char *path, const struct options *opt)
         }
     }
 
+    for(int i  = 0; i < childCnt; i++){
 
+        int childStatus;
+        wait(&childStatus);
+    }
 
     closedir(dirp);
     return 0;
@@ -280,7 +293,7 @@ void usr_signal_handler(int signo)
 
     if (signo == SIGUSR1){
         dir_cnt++;
-        // printf("New directory: %d/%d directories/files at this time. \n",dir_cnt,file_cnt);
+        printf("New directory: %d/%d directories/files at this time. \n",dir_cnt,file_cnt);
     }
     else if (signo == SIGUSR2){
 
@@ -310,3 +323,24 @@ int get_dir_cnt()
 {
     return dir_cnt;
 }
+
+int setup_signals(){
+
+
+    struct sigaction sigact;
+    sigemptyset(&sigact.sa_mask);
+    sigact.sa_flags = SA_RESTART;
+    sigact.sa_handler = usr_signal_handler;
+    sigaction(SIGUSR1,&sigact,NULL);
+    sigaction(SIGUSR2,&sigact,NULL);
+
+    sigemptyset(&sigact.sa_mask);
+    sigact.sa_flags = SA_RESTART;
+    sigact.sa_handler;
+    sigaction(SIGINT,&sigact,NULL);
+
+
+    return 0;
+
+}
+

@@ -38,7 +38,8 @@ static bool check_argument(char* filename) {
 
     char* token = strtok(name, ".");
 
-    token = strtok(NULL, ".");
+    if((token = strtok(NULL, ".")) == NULL)
+        return false;
 
     // Checks if it has a valid extension (strcmp returns 0 if equal)
     if(strcmp(token, "csv") && strcmp(token, "txt")){
@@ -57,20 +58,10 @@ static bool check_argument(char* filename) {
 }
 
 
-void clear_options_struct(struct options* options){
-
-    options->check_subdir = false;
-    options->check_fingerprint = false;
-    options->logfile = false;
-    options->output = false;
-
-    return ;
-}
-
 int parse_options(int argc, char* argv[], struct options* options){
     int opt;
 
-    clear_options_struct(options);
+    memset(options,0,sizeof(struct options));
 
     options->argv = argv;
     options->process_root_pid = getpid();
@@ -109,7 +100,10 @@ int parse_options(int argc, char* argv[], struct options* options){
 
             case 'v':
                 options->logfile = true;
-                options->logfilename = getenv("LOGFILENAME");
+                if ((options->logfilename = getenv("LOGFILENAME")) == NULL) {
+                    printf("LOGFILENAME env var not set\n");
+                    exit(-1);
+                }
 
                 if(check_argument(options->logfilename)) {
                     options->logfilename_fd = open(options->logfilename, O_WRONLY | O_CREAT | O_EXCL, OUTPUT_OPEN_MODE);
