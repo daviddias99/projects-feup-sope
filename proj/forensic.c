@@ -13,6 +13,7 @@
 #define MAX_FILE_INFO_SIZE            600
 #define MAX_FILE_PATH_SIZE            600
 #define MAX_FILE_LOG_LINE_SIZE        250 // please change the name of this macro
+#define TIME_STRUCT_YEAR_OFFSET       1900
 
 
 int get_cmd_output(char *args[], char *buf, size_t buf_size)
@@ -22,8 +23,10 @@ int get_cmd_output(char *args[], char *buf, size_t buf_size)
 
     pipe(fd);
     pid = fork();
+
     if (pid == -1)
     {
+        perror("fork error");
         return -1;
     }
     else if (pid == 0)
@@ -31,19 +34,34 @@ int get_cmd_output(char *args[], char *buf, size_t buf_size)
         close(fd[READ]);
         dup2(fd[WRITE], STDOUT_FILENO);
         execvp(args[0], args);
+
+        return -2;
+
     }
     else if (pid > 0)
     {
         int status, n_read;
 
-        close(fd[WRITE]);
+        if(close(fd[WRITE]) != 0){
 
-        n_read = read(fd[READ], buf, buf_size);
+            perror("close error");
+            return -3;
+        }
+            
+
+        if((n_read = read(fd[READ], buf, buf_size)) < 0){
+
+            perror("read error");   
+            return -4;
+        }
+            
+
         buf[n_read - 1] = 0;
 
         wait(&status);
+
         if (status)
-            return -1;
+            return -5;
     }
 
     return 0;
@@ -86,8 +104,11 @@ int build_ISO8601_date(char *date, time_t time)
 
     struct tm *lTime = localtime(&time);
 
+    if(lTime == NULL)
+        return -1;
+
     // note, string is 19 chars long (+1 '/0')
-    sprintf(date, "%04d-%02d-%02dT%02d:%02d:%02d", lTime->tm_year + 1900, lTime->tm_mon + 1, lTime->tm_mday, lTime->tm_hour, lTime->tm_min, lTime->tm_sec);
+    sprintf(date, "%04d-%02d-%02dT%02d:%02d:%02d", lTime->tm_year + TIME_STRUCT_YEAR_OFFSET, lTime->tm_mon + 1, lTime->tm_mday, lTime->tm_hour, lTime->tm_min, lTime->tm_sec);
 
     return 0;
 }
@@ -101,8 +122,15 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
 
     if(opt->output){
 
-        kill(opt->process_root_pid,SIGUSR2);
-        reg_execution("SIGNAL USR2",opt);
+        if(kill(opt->process_root_pid,SIGUSR2) != 0){
+
+            perror("kill error");
+            return -1;
+        }
+            
+
+        if(reg_execution("SIGNAL USR2",opt) != 0)
+            return -2;
     }
 
 
@@ -110,9 +138,11 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
     // get the "file" system command output and extract the file type
 
     char *file_output = (char *)malloc(MAX_FILE_INFO_SIZE * sizeof(char));
-    get_cmd_output(args, file_output, MAX_FILE_INFO_SIZE);
-    char *file_type = strtok(file_output, ",");
 
+    if(get_cmd_output(args, file_output, MAX_FILE_INFO_SIZE) != 0)
+        return -3;
+
+    char *file_type = strtok(file_output, ",");
     
     // extract the file's size in bytes
 
@@ -152,21 +182,27 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
             args[0] = "md5sum";
             args[2] = NULL;
             strcat(line, ",");
-            get_cmd_output(args, line + strlen(line), MD5_SIZE + 1);
+
+            if(get_cmd_output(args, line + strlen(line), MD5_SIZE + 1) != 0)
+                return -4;
         }
 
         if (opt->fp_mask & SHA1_HASH)
         {
             args[0] = "sha1sum";
             strcat(line, ",");
-            get_cmd_output(args, line + strlen(line), SHA1_SIZE + 1);
+
+            if(get_cmd_output(args, line + strlen(line), SHA1_SIZE + 1) != 0)
+                return -5;
         }
 
         if (opt->fp_mask & SHA256_HASH)
         {
             args[0] = "sha256sum";
             strcat(line, ",");
-            get_cmd_output(args, line + strlen(line), SHA256_SIZE + 1);
+
+            if(get_cmd_output(args, line + strlen(line), SHA256_SIZE + 1) != 0)
+                return -6;
         }
     }
     
@@ -174,12 +210,20 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
 
     // write line into the desired location
     lseek(opt->output_fd, 0, SEEK_END);
-    write(opt->output_fd, line, strlen(line));
+
+    if(write(opt->output_fd, line, strlen(line)) < 0){
+
+        perror("write error");
+        return -7;
+    }
+
     
     // action logging
     char *action = (char *)malloc(sizeof(char) * 50 + sizeof(file_name));
     sprintf(action, "Analized %s", file_name + strlen(opt->base_directory) + 1);
-    reg_execution(action, opt);
+
+    if(reg_execution(action, opt) < 0)
+        return -7;
     
     // free allocated memory
     free(line);
@@ -205,7 +249,12 @@ int reg_execution(char *act, const struct options *opt)
     sprintf(reg, "%5.2Lf ms - %08d - %s\n", curr_time - opt->init_time, getpid(), act);
 
     lseek(opt->logfilename_fd, 0, SEEK_END);
-    write(opt->logfilename_fd, reg, strlen(reg));
+
+    if(write(opt->logfilename_fd, reg, strlen(reg)) < 0){
+
+        perror("write error");
+        return -7;
+    }
     free(reg);
 
     return 0;
@@ -221,8 +270,15 @@ int scan_directory(char *path, const struct options *opt)
     
     if(opt->output){
 
-        kill(opt->process_root_pid,SIGUSR1);
-        reg_execution("SIGNAL USR1",opt);
+        if(kill(opt->process_root_pid,SIGUSR1) != 0){
+
+            perror("kill error");
+            return -1;
+        }
+            
+
+        if(reg_execution("SIGNAL USR1",opt) != 0)
+            return -2;
     }
         
         
@@ -254,6 +310,7 @@ int scan_directory(char *path, const struct options *opt)
 
                 if (pid == -1)
                 {
+                    perror("fork error");
                     exit(5);
                 }
                 else if (pid == 0)
@@ -268,19 +325,23 @@ int scan_directory(char *path, const struct options *opt)
         {
             build_file_line(&stat_buf, fpath, opt);
             
-            if(program_is_term())
+            if(program_is_term()) // check if a SIGINT sign was issued, if so, stop processing the current directory.
                 break;
 
         }
     }
 
+    // wait for all child processed. These processes correspond to sub-directories
     for(int i  = 0; i < childCnt; i++){
 
         int childStatus;
         wait(&childStatus);
     }
 
-    closedir(dirp);
+    if(closedir(dirp) != 0)
+        return -3;
+
+
     return 0;
 }
 
@@ -331,13 +392,19 @@ int setup_signals(){
     sigemptyset(&sigact.sa_mask);
     sigact.sa_flags = SA_RESTART;
     sigact.sa_handler = usr_signal_handler;
-    sigaction(SIGUSR1,&sigact,NULL);
-    sigaction(SIGUSR2,&sigact,NULL);
+
+    if(sigaction(SIGUSR1,&sigact,NULL) != 0)
+        return -1;
+
+    if(sigaction(SIGUSR2,&sigact,NULL) != 0)
+        return -2;
 
     sigemptyset(&sigact.sa_mask);
     sigact.sa_flags = SA_RESTART;
     sigact.sa_handler;
-    sigaction(SIGINT,&sigact,NULL);
+    
+    if(sigaction(SIGINT,&sigact,NULL) != 0)
+        return -3;
 
 
     return 0;
@@ -346,8 +413,6 @@ int setup_signals(){
 
 
 int setup_time(struct options* opt){
-
-
 
     struct timespec start;
     clock_gettime(CLOCK_REALTIME, &start);
