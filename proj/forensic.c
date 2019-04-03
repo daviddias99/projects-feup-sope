@@ -344,3 +344,15 @@ int setup_signals(){
 
 }
 
+
+int setup_time(struct options* opt){
+
+
+
+    struct timespec start;
+    clock_gettime(CLOCK_REALTIME, &start);
+    opt->init_time = SEC_TO_MIL(start.tv_sec) + NANO_TO_MIL(start.tv_nsec);
+
+    return 0;
+}
+

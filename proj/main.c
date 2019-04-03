@@ -9,22 +9,11 @@ int main(int argc, char* argv[]){
     }
 
     struct options opt;
-    opt.fp_mask = 0;
 
-        if (parse_options(argc, argv, &opt) != 0)
+    if (parse_options(argc, argv, &opt) != 0)
         exit(2);
 
-    // TODO: Possivelmente fazer uma função dedicada a inicializar o tempo
-    struct timespec start;
-    clock_gettime(CLOCK_REALTIME, &start);
-
-    // opt.init_time = start.tv_sec*1000 + start.tv_nsec/1000000;
-    opt.init_time = SEC_TO_MIL(start.tv_sec) + NANO_TO_MIL(start.tv_nsec);
-
-
-
-    // signal setup
-
+    setup_time(&opt);
     setup_signals();
 
     struct stat stat_buf;
