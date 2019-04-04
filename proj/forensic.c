@@ -143,6 +143,8 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
     strcat(line, ",");
     build_ISO8601_date(line + strlen(line), file_stat->st_mtime);       // last modification date
     
+    args[2] = NULL;
+
     // add optional checksums to the line
     if (opt->check_fingerprint)
     {
@@ -150,7 +152,6 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
         if (opt->fp_mask & MD5_HASH)
         {
             args[0] = "md5sum";
-            args[2] = NULL;
             strcat(line, ",");
             get_cmd_output(args, line + strlen(line), MD5_SIZE + 1);
         }
@@ -237,7 +238,6 @@ int scan_directory(char *path, const struct options *opt)
         struct stat stat_buf;
         sprintf(fpath, "%s/%s", path, direntp->d_name);
         
-
         if (lstat(fpath, &stat_buf) != 0)
             return -1;
 
@@ -258,13 +258,12 @@ int scan_directory(char *path, const struct options *opt)
                 }
                 else if (pid == 0)
                 {   
-                    
                     return scan_directory(fpath, opt);
                 }
                 
             }
         }
-        else
+        else if (S_ISREG(stat_buf.st_mode))
         {
             build_file_line(&stat_buf, fpath, opt);
             
