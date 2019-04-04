@@ -137,7 +137,7 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
     
     // get the "file" system command output and extract the file type
 
-    char *file_output = (char *)malloc(MAX_FILE_INFO_SIZE * sizeof(char));
+    char file_output[MAX_FILE_INFO_SIZE];
 
     if(get_cmd_output(args, file_output, MAX_FILE_INFO_SIZE) != 0)
         return -3;
@@ -220,7 +220,7 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
 
     
     // action logging
-    char *action = (char *)malloc(sizeof(char) * 50 + sizeof(file_name));
+    char *action = (char *)malloc(sizeof(char) * (50 + sizeof(file_name)));
     sprintf(action, "Analized %s", file_name + strlen(opt->base_directory) + 1);
 
     if(reg_execution(action, opt) < 0)
@@ -229,7 +229,6 @@ int build_file_line(const struct stat *file_stat, char *file_name, const struct 
     // free allocated memory
     free(line);
     free(action);
-    free(file_output);
 
     return 0;
 }
