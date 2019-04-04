@@ -38,6 +38,8 @@ int build_ISO8601_date(char* date, time_t time);
 
 int setup_signals();
 
+int setup_time(struct options* opt);
+
 void usr_signal_handler(int signo);
 
 void int_signal_handler(int signo);
