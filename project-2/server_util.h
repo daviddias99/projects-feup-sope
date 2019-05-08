@@ -17,13 +17,15 @@
 
 typedef struct bank_account_array{
 
-    bank_account_t bank_accounts_array[MAX_BANK_ACCOUNTS];
+    bank_account_t array[MAX_BANK_ACCOUNTS];
     size_t next_account_index;
 
 } bank_account_array_t;
 
 bank_account_t createBankAccount(uint32_t id, char* password, uint32_t balance);
 bank_account_t createAdminBankAccount(char* password);
+int insertBankAccount(bank_account_t newAccount);
+bool existsBankAccount(uint32_t id);
 
 bool passwordIsValid(char* password);
 int randomBetween(int a, int b);

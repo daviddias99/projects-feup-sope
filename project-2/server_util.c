@@ -1,5 +1,7 @@
 #include "server_util.h"
 
+bank_account_array_t accounts;
+
 bool passwordIsValid(char* password){
 
     int passwordLength = strlen(password);
@@ -54,7 +56,7 @@ int generateSalt(char* saltStr){
 
 bank_account_t createAdminBankAccount(char* password){
 
-    return createBankAccount(0,password,0);
+    return createBankAccount(ADMIN_ACCOUNT_ID,password,0);
 
 }
 
@@ -68,4 +70,27 @@ bank_account_t createBankAccount(uint32_t id, char* password, uint32_t balance) 
     generateSalt(newBankAccount.salt);
 
     return newBankAccount;
+}
+
+
+int insertBankAccount(bank_account_t newAccount){
+
+    if(accounts.next_account_index == MAX_BANK_ACCOUNTS)
+        return -1;
+    
+    if(existsAccount(newAccount.account_id))
+        return -2;
+
+    accounts.array[accounts.next_account_index] = newAccount;
+}
+
+bool existsBankAccount(uint32_t id){
+
+    for(int i = 0; i < accounts.next_account_index;i++){
+
+        if(accounts.array[i].account_id == id)
+            return true;
+    }
+
+    return false;
 }

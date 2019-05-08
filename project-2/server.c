@@ -1,12 +1,10 @@
 
 #include "server_util.h"
 
-bank_account_array_t accounts;
 
 int main(int argc, char* argv[]){
 
     srand(time(NULL));
-    accounts.next_account_index = 0;
 
     if(argc != 3){
 
@@ -24,8 +22,8 @@ int main(int argc, char* argv[]){
         exit(-2);
     }
 
-    bank_account_t createAdminBankAccount(adminPassword);
-
+    bank_account_t adminAccount = createAdminBankAccount(adminPassword);
+    insertBankAccount(adminAccount);
 
     return 0;
 }
