@@ -17,7 +17,7 @@ int main(int argc, char* argv[]){
     char* adminPassword = argv[2];
 
     if(!passwordIsValid(adminPassword)){
-
+        
         fprintf( stderr, "Invalid password\n");
         exit(-2);
     }
@@ -25,12 +25,6 @@ int main(int argc, char* argv[]){
     bank_account_t adminAccount = createAdminBankAccount(adminPassword);
     insertBankAccount(adminAccount);
 
-    char teste[SHA256_SIZE+1];
-    char* teste2 = "ola";
-
-    getSHA256sum(teste2,teste);
-
-    printf("--- %s \n",teste);
 
     return 0;
 }
