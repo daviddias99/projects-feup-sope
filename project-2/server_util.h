@@ -31,6 +31,7 @@ bool passwordIsValid(char* password);
 int randomBetween(int a, int b);
 char getHexChar(unsigned int a);
 int generateSalt(char* saltStr);
+int generateSHA256sum(char* str, char* result);
 
 
 #endif

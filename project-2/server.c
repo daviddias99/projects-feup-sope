@@ -25,5 +25,12 @@ int main(int argc, char* argv[]){
     bank_account_t adminAccount = createAdminBankAccount(adminPassword);
     insertBankAccount(adminAccount);
 
+    char teste[SHA256_SIZE+1];
+    char* teste2 = "ola";
+
+    getSHA256sum(teste2,teste);
+
+    printf("--- %s \n",teste);
+
     return 0;
 }
