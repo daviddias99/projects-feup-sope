@@ -17,14 +17,14 @@ int main(int argc, char* argv[]){
     char* adminPassword = argv[2];
 
     if(!passwordIsValid(adminPassword)){
-        
+
         fprintf( stderr, "Invalid password\n");
         exit(-2);
     }
 
     bank_account_t adminAccount = createAdminBankAccount(adminPassword);
     insertBankAccount(adminAccount);
-
+    createBankOffices(bankOfficeCount);
 
     return 0;
 }

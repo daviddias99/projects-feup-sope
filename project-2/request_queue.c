@@ -1,13 +1,13 @@
 #include "request_queue.h"
 
-int queue_insert(RequestQueue *list, tlv_request_t newElement, int position)
+int queue_insert(RequestQueue_t *list, tlv_request_t newElement, int position)
 {
 
     // alocate memory for a new node with the given tlv_request_t
-    RequestQueueNode *newNode = malloc(sizeof(RequestQueueNode));
+    RequestQueueNode_t *newNode = malloc(sizeof(RequestQueueNode_t));
     newNode->element = newElement;
     newNode->next = NULL;
-    RequestQueueNode *currentNode = list->header->next;
+    RequestQueueNode_t *currentNode = list->header->next;
 
     int i = 0;
 
@@ -25,7 +25,7 @@ int queue_insert(RequestQueue *list, tlv_request_t newElement, int position)
         if (i == position - 1)
         {
 
-            RequestQueueNode *nextNode = currentNode->next;
+            RequestQueueNode_t *nextNode = currentNode->next;
             currentNode->next = newNode;
             newNode->next = nextNode;
             list->size++;
@@ -36,7 +36,7 @@ int queue_insert(RequestQueue *list, tlv_request_t newElement, int position)
         i++;
     }
 
-    RequestQueueNode *nextNode = currentNode->next;
+    RequestQueueNode_t *nextNode = currentNode->next;
     currentNode->next = newNode;
     newNode->next = nextNode;
     list->size++;
@@ -44,17 +44,17 @@ int queue_insert(RequestQueue *list, tlv_request_t newElement, int position)
     return 0;
 }
 
-int queue_delete(RequestQueue *list, int position)
+int queue_delete(RequestQueue_t *list, int position)
 {
 
-    RequestQueueNode *currentNode = list->header->next;
+    RequestQueueNode_t *currentNode = list->header->next;
 
     int i = 0;
 
     if (position == 0)
     {
 
-        RequestQueueNode *deletedNode = currentNode;
+        RequestQueueNode_t *deletedNode = currentNode;
         list->header->next = deletedNode->next;
         free(deletedNode);
         list->size--;
@@ -67,7 +67,7 @@ int queue_delete(RequestQueue *list, int position)
         if (i == position - 1)
         {
 
-            RequestQueueNode *deletedNode = currentNode->next;
+            RequestQueueNode_t *deletedNode = currentNode->next;
             currentNode->next = deletedNode->next;
             free(deletedNode);
             list->size--;
@@ -81,13 +81,13 @@ int queue_delete(RequestQueue *list, int position)
     return -1;
 }
 
-int queue_push(RequestQueue *list, tlv_request_t newElement)
+int queue_push(RequestQueue_t *list, tlv_request_t newElement)
 {
 
     return queue_insert(list, newElement, list->size);
 }
 
-tlv_request_t queue_pop(RequestQueue *list)
+tlv_request_t queue_pop(RequestQueue_t *list)
 {
 
     tlv_request_t result = queue_retreive(list, 0);
@@ -96,10 +96,10 @@ tlv_request_t queue_pop(RequestQueue *list)
     return result;
 }
 
-tlv_request_t queue_retreive(RequestQueue *list, int position)
+tlv_request_t queue_retreive(RequestQueue_t *list, int position)
 {
 
-    RequestQueueNode *currentNode = list->header->next;
+    RequestQueueNode_t *currentNode = list->header->next;
 
     int i = 0;
 
@@ -121,7 +121,7 @@ tlv_request_t queue_retreive(RequestQueue *list, int position)
     return dummyResult;
 }
 
-int queue_empty(RequestQueue *list)
+int queue_empty(RequestQueue_t *list)
 {
 
     while (list->size != 0)
@@ -132,7 +132,7 @@ int queue_empty(RequestQueue *list)
     return 0;
 }
 
-bool queue_is_empty(RequestQueue *list)
+bool queue_is_empty(RequestQueue_t *list)
 {
 
     if (list->header->next == NULL)

@@ -131,3 +131,15 @@ bool existsBankAccount(uint32_t id)
 
     return false;
 }
+
+int createBankOffices(unsigned int quantity){
+
+
+    for(int i = 1; i <= quantity; i++){
+
+        pthread_create(offices[i].tid,NULL,atendepedidos,NULL);
+        offices[i].id = i;
+    }
+
+    return 0;
+}
