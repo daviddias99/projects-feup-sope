@@ -11,10 +11,15 @@
 #include "time.h"
 #include "pthread.h"
 #include "request_queue.h"
+#include "sys/types.h"
+#include "sys/stat.h"
+#include "fcntl.h"
+#include "debug.h"
 
 #define READ 0
 #define WRITE 1
 #define SHA256_SIZE                   64
+#define REQUEST_FIFO_PERM             0660
 
 
 typedef struct bank_account_array{
@@ -48,6 +53,10 @@ int randomBetween(int a, int b);
 char getHexChar(unsigned int a);
 int generateSalt(char* saltStr);
 int generateSHA256sum(char* str, char* result);
+
+int waitForRequests();
+int setupRequestFIFO();
+int initSyncMechanisms(size_t thread_cnt);
 
 
 #endif

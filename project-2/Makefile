@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -pthread #-Werror -pedantic
 ODIR = build
-TARGET = forensic
+TARGET = server
 OBJS = $(ODIR)/server_util.o $(ODIR)/server.o $(ODIR)/request_queue.o
 
 .PHONY: all clean

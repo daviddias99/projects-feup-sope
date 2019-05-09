@@ -1,6 +1,12 @@
 #include "server_util.h"
+#include <semaphore.h>
 
 bank_account_array_t accounts;
+int request_fifo_fd;
+
+sem_t empty;
+sem_t full;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 bool passwordIsValid(char *password)
 {
@@ -153,4 +159,37 @@ int createBankOffices(unsigned int quantity){
 void *bank_office_func_stub(void *stub){
 
     return stub;
+}
+
+int setupRequestFIFO(){
+
+    mkfifo("/tmp/secure_srv",REQUEST_FIFO_PERM);
+    request_fifo_fd = open("/tmp/secure_srv",O_RDWR);
+
+    return 0;
+}
+
+int waitForRequests(){
+
+    while(true){
+
+
+        //read(request_fifo_fd)
+
+
+
+
+
+    }
+
+
+
+    return 0;
+
+}
+
+int initSyncMechanisms(size_t thread_cnt){
+
+    sem_init(&empty,0,thread_cnt);
+    sem_init(&full,0,0);
 }
