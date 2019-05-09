@@ -6,7 +6,10 @@ int request_fifo_fd;
 
 sem_t empty;
 sem_t full;
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t request_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t account_array_mutex = PTHREAD_MUTEX_INITIALIZER;
+RequestQueue_t requests;
+bank_office_t offices[MAX_BANK_OFFICES];
 
 bool passwordIsValid(char *password)
 {
@@ -158,6 +161,20 @@ int createBankOffices(unsigned int quantity){
 
 void *bank_office_func_stub(void *stub){
 
+
+    while(true){
+
+        sem_wait(&full);
+        pthread_mutex_lock(&request_queue_mutex);
+
+        queue_pop(&requests);
+
+        pthread_mutex_unlock(&request_queue_mutex);
+        sem_post(&empty);
+
+    }
+
+
     return stub;
 }
 
@@ -173,16 +190,18 @@ int waitForRequests(){
 
     while(true){
 
+        tlv_request_t received_request;
+        read(request_fifo_fd,&received_request,sizeof(tlv_reply_t));
 
-        //read(request_fifo_fd)
+        sem_wait(&empty);
+        pthread_mutex_lock(&request_queue_mutex);
 
+        queue_push(&requests,received_request);
 
-
-
+        pthread_mutex_unlock(&request_queue_mutex);
+        sem_post(&full);
 
     }
-
-
 
     return 0;
 
@@ -192,4 +211,6 @@ int initSyncMechanisms(size_t thread_cnt){
 
     sem_init(&empty,0,thread_cnt);
     sem_init(&full,0,0);
+
+    return 0;
 }

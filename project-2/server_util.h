@@ -36,8 +36,7 @@ typedef struct bank_office{         // TODO: mudar nome
 
 }bank_office_t;
 
-RequestQueue_t requests;
-bank_office_t offices[MAX_BANK_OFFICES];
+
 
 bank_account_t createBankAccount(uint32_t id, char* password, uint32_t balance);
 bank_account_t createAdminBankAccount(char* password);
