@@ -86,6 +86,17 @@ bank_account_t createBankAccount(uint32_t id, char *password, uint32_t balance)
     return newBankAccount;
 }
 
+bank_account_t* findBankAccount(uint32_t id){
+
+    for(int i = 0; i < accounts.next_account_index; i++){
+
+        if(accounts.array[i].account_id == id)
+            return &accounts.array[i];
+    }
+
+    return NULL;
+}
+
 int generateSHA256sum(char *str, char* result)
 {
 
@@ -172,11 +183,71 @@ void *bank_office_func_stub(void *stub){
         pthread_mutex_unlock(&request_queue_mutex);
         sem_post(&empty);
 
+        handleRequest(currentRequest);
     }
 
 
     return stub;
 }
+
+int checkRequestHeader(req_header_t header){
+
+    bank_account_t* account = findBankAccount(header.account_id);
+
+    if(account == NULL)
+        return -1;
+
+    if(!passwordIsCorrect(account,header.password))
+        return -2;
+
+    return 0;
+}
+
+bool passwordIsCorrect(bank_account_t* account,char* pwd){
+
+    
+
+
+
+}
+
+int handleRequest(tlv_request_t request){
+
+    enum op_type type = request.type;
+    uint32_t size = request.length;
+    req_header_t header = request.value.header;
+    tlv_reply_t reply;
+
+    int validHeader = checkRequestHeader(header);
+
+
+
+    switch (type)
+    {
+    case OP_CREATE_ACCOUNT:
+
+        break;
+
+    case OP_BALANCE:
+    
+        break;
+
+    case OP_TRANSFER:
+    
+        break;
+
+    case OP_SHUTDOWN:
+    
+        break;
+    
+    default:
+        break;
+    }
+
+    // enviar resposta
+
+}
+
 
 int setupRequestFIFO(){
 

@@ -40,6 +40,7 @@ typedef struct bank_office{         // TODO: mudar nome
 
 bank_account_t createBankAccount(uint32_t id, char* password, uint32_t balance);
 bank_account_t createAdminBankAccount(char* password);
+bank_account_t* findBankAccount(uint32_t id);
 
 int createBankOffices(unsigned int quantity);
 void *bank_office_func_stub(void *stub);
@@ -56,6 +57,10 @@ int generateSHA256sum(char* str, char* result);
 int waitForRequests();
 int setupRequestFIFO();
 int initSyncMechanisms(size_t thread_cnt);
+
+int handleRequest(tlv_request_t request);
+int checkRequestHeader(req_header_t header);
+bool passwordIsCorrect(bank_account_t* account,char* pwd);
 
 
 #endif
