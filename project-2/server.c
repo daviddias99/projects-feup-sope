@@ -25,6 +25,6 @@ int main(int argc, char* argv[]){
     bank_account_t adminAccount = createAdminBankAccount(adminPassword);
     insertBankAccount(adminAccount);
     createBankOffices(bankOfficeCount);
-
+   
     return 0;
 }

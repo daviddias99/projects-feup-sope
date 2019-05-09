@@ -54,6 +54,8 @@ int generateSalt(char *saltStr)
         saltStr[i] = getHexChar(randomBetween(0, 15));
 
     saltStr[SALT_LEN] = '\0';
+
+    return 0;
 }
 
 bank_account_t createAdminBankAccount(char *password)
@@ -117,12 +119,14 @@ int insertBankAccount(bank_account_t newAccount)
         return -2;
 
     accounts.array[accounts.next_account_index] = newAccount;
+
+    return 0;
 }
 
 bool existsBankAccount(uint32_t id)
 {
 
-    for (int i = 0; i < accounts.next_account_index; i++)
+    for (unsigned int i = 0; i < accounts.next_account_index; i++)
     {
 
         if (accounts.array[i].account_id == id)
@@ -134,12 +138,19 @@ bool existsBankAccount(uint32_t id)
 
 int createBankOffices(unsigned int quantity){
 
+    offices[0].id = 0;
+    offices[0].tid = pthread_self();
 
-    for(int i = 1; i <= quantity; i++){
+    for(unsigned int i = 1; i <= quantity; i++){
 
-        pthread_create(offices[i].tid,NULL,atendepedidos,NULL);
+        pthread_create(&offices[i].tid,NULL,bank_office_func_stub,NULL);
         offices[i].id = i;
     }
 
     return 0;
+}
+
+void *bank_office_func_stub(void *stub){
+
+    return stub;
 }

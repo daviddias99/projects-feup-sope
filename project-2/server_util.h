@@ -38,6 +38,8 @@ bank_account_t createBankAccount(uint32_t id, char* password, uint32_t balance);
 bank_account_t createAdminBankAccount(char* password);
 
 int createBankOffices(unsigned int quantity);
+void *bank_office_func_stub(void *stub);
+
 int insertBankAccount(bank_account_t newAccount);
 bool existsBankAccount(uint32_t id);
 

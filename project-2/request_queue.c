@@ -117,6 +117,7 @@ tlv_request_t queue_retreive(RequestQueue_t *list, int position)
     }
 
     tlv_request_t dummyResult;
+    dummyResult.length = 0;
 
     return dummyResult;
 }
