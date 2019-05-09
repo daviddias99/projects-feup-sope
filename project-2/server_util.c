@@ -80,19 +80,29 @@ bank_account_t createBankAccount(uint32_t id, char *password, uint32_t balance)
 
     newBankAccount.account_id = id;
     newBankAccount.balance = balance;
-    generateSHA256sum(password,newBankAccount.hash);
     generateSalt(newBankAccount.salt);
+
+    char temp[MAX_PASSWORD_LEN+SALT_LEN];
+
+    strcpy(temp,password);
+    strcat(temp,newBankAccount.salt);
+
+    generateSHA256sum(temp,newBankAccount.hash);
 
     return newBankAccount;
 }
 
 bank_account_t* findBankAccount(uint32_t id){
 
-    for(int i = 0; i < accounts.next_account_index; i++){
+    pthread_mutex_lock(&account_array_mutex);
+
+    for(unsigned int i = 0; i < accounts.next_account_index; i++){
 
         if(accounts.array[i].account_id == id)
             return &accounts.array[i];
     }
+
+    pthread_mutex_unlock(&account_array_mutex);
 
     return NULL;
 }
@@ -145,20 +155,24 @@ int insertBankAccount(bank_account_t newAccount)
 
 bool existsBankAccount(uint32_t id)
 {
+    pthread_mutex_lock(&account_array_mutex);
 
     for (unsigned int i = 0; i < accounts.next_account_index; i++)
     {
-
+        
         if (accounts.array[i].account_id == id)
             return true;
+        
     }
+
+    pthread_mutex_unlock(&account_array_mutex);
 
     return false;
 }
 
 int createBankOffices(unsigned int quantity){
 
-    offices[0].id = 0;
+    offices[0].id = MAIN_THREAD_ID;
     offices[0].tid = pthread_self();
 
     for(unsigned int i = 1; i <= quantity; i++){
@@ -205,22 +219,29 @@ int checkRequestHeader(req_header_t header){
 
 bool passwordIsCorrect(bank_account_t* account,char* pwd){
 
-    
+    char temp[MAX_PASSWORD_LEN+SALT_LEN];
 
+    strcpy(temp,pwd);
+    strcat(temp,account->salt);
 
+    generateSHA256sum(temp,temp);
+
+    if(strcmp(temp,account->hash) == 0)
+        return true;
+    else
+        return false;
 
 }
 
 int handleRequest(tlv_request_t request){
 
     enum op_type type = request.type;
-    uint32_t size = request.length;
+    // uint32_t size = request.length;
     req_header_t header = request.value.header;
-    tlv_reply_t reply;
+    // tlv_reply_t reply;
 
-    int validHeader = checkRequestHeader(header);
-
-
+    if(checkRequestHeader(header) != 0)
+        return -1;
 
     switch (type)
     {
@@ -246,6 +267,7 @@ int handleRequest(tlv_request_t request){
 
     // enviar resposta
 
+    return 0;
 }
 
 
@@ -272,6 +294,7 @@ int waitForRequests(){
         pthread_mutex_unlock(&request_queue_mutex);
         sem_post(&full);
 
+        handleRequest(received_request);
     }
 
     return 0;
