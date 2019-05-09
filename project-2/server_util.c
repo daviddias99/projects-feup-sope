@@ -167,7 +167,7 @@ void *bank_office_func_stub(void *stub){
         sem_wait(&full);
         pthread_mutex_lock(&request_queue_mutex);
 
-        queue_pop(&requests);
+        tlv_request_t currentRequest = queue_pop(&requests);
 
         pthread_mutex_unlock(&request_queue_mutex);
         sem_post(&empty);
