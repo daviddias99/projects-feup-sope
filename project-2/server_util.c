@@ -82,32 +82,44 @@ bank_account_t createBankAccount(uint32_t id, char *password, uint32_t balance)
     newBankAccount.balance = balance;
     generateSalt(newBankAccount.salt);
 
-    char temp[MAX_PASSWORD_LEN+SALT_LEN];
+    char temp[MAX_PASSWORD_LEN + SALT_LEN];
 
-    strcpy(temp,password);
-    strcat(temp,newBankAccount.salt);
+    strcpy(temp, password);
+    strcat(temp, newBankAccount.salt);
 
-    generateSHA256sum(temp,newBankAccount.hash);
+    generateSHA256sum(temp, newBankAccount.hash);
 
     return newBankAccount;
 }
 
-bank_account_t* findBankAccount(uint32_t id){
+bank_account_t findBankAccount(uint32_t id)
+{
 
     pthread_mutex_lock(&account_array_mutex);
 
-    for(unsigned int i = 0; i < accounts.next_account_index; i++){
+    for (unsigned int i = 0; i < accounts.next_account_index; i++)
+    {
 
-        if(accounts.array[i].account_id == id)
-            return &accounts.array[i];
+        if (accounts.array[i].account_id == id)
+            return accounts.array[i];
     }
 
     pthread_mutex_unlock(&account_array_mutex);
 
-    return NULL;
+
+    return errorAccount();
 }
 
-int generateSHA256sum(char *str, char* result)
+bank_account_t errorAccount(){
+
+    bank_account_t error;
+
+    error.account_id = ERROR_ACCOUNT_ID;
+
+    return error;
+}
+
+int generateSHA256sum(char *str, char *result)
 {
 
     int fd1[2];
@@ -129,9 +141,9 @@ int generateSHA256sum(char *str, char* result)
     close(fd1[WRITE]);
     close(fd2[READ]);
 
-    write(fd2[WRITE],str,strlen(str));
+    write(fd2[WRITE], str, strlen(str));
     close(fd2[WRITE]);
-    read(fd1[READ],result,SHA256_SIZE);
+    read(fd1[READ], result, SHA256_SIZE);
     close(fd1[READ]);
 
     result[SHA256_SIZE] = '\0';
@@ -142,6 +154,8 @@ int generateSHA256sum(char *str, char* result)
 int insertBankAccount(bank_account_t newAccount)
 {
 
+    pthread_mutex_lock(&account_array_mutex);
+
     if (accounts.next_account_index == MAX_BANK_ACCOUNTS)
         return -1;
 
@@ -149,6 +163,8 @@ int insertBankAccount(bank_account_t newAccount)
         return -2;
 
     accounts.array[accounts.next_account_index] = newAccount;
+
+    pthread_mutex_unlock(&account_array_mutex);
 
     return 0;
 }
@@ -159,10 +175,9 @@ bool existsBankAccount(uint32_t id)
 
     for (unsigned int i = 0; i < accounts.next_account_index; i++)
     {
-        
+
         if (accounts.array[i].account_id == id)
             return true;
-        
     }
 
     pthread_mutex_unlock(&account_array_mutex);
@@ -170,24 +185,27 @@ bool existsBankAccount(uint32_t id)
     return false;
 }
 
-int createBankOffices(unsigned int quantity){
+int createBankOffices(unsigned int quantity)
+{
 
     offices[0].id = MAIN_THREAD_ID;
     offices[0].tid = pthread_self();
 
-    for(unsigned int i = 1; i <= quantity; i++){
+    for (unsigned int i = 1; i <= quantity; i++)
+    {
 
-        pthread_create(&offices[i].tid,NULL,bank_office_func_stub,NULL);
+        pthread_create(&offices[i].tid, NULL, bank_office_func_stub, NULL);
         offices[i].id = i;
     }
 
     return 0;
 }
 
-void *bank_office_func_stub(void *stub){
+void *bank_office_func_stub(void *stub)
+{
 
-
-    while(true){
+    while (true)
+    {
 
         sem_wait(&full);
         pthread_mutex_lock(&request_queue_mutex);
@@ -200,96 +218,251 @@ void *bank_office_func_stub(void *stub){
         handleRequest(currentRequest);
     }
 
-
     return stub;
 }
 
-int checkRequestHeader(req_header_t header){
+int checkRequestHeader(req_header_t header)
+{
 
-    bank_account_t* account = findBankAccount(header.account_id);
+    bank_account_t account = findBankAccount(header.account_id);
 
-    if(account == NULL)
+    if (account.account_id == ERROR_ACCOUNT_ID)
         return -1;
 
-    if(!passwordIsCorrect(account,header.password))
+    if (!passwordIsCorrect(account, header.password))
         return -2;
 
     return 0;
 }
 
-bool passwordIsCorrect(bank_account_t* account,char* pwd){
+bool passwordIsCorrect(bank_account_t account, char *pwd)
+{
 
-    char temp[MAX_PASSWORD_LEN+SALT_LEN];
+    char temp[MAX_PASSWORD_LEN + SALT_LEN];
 
-    strcpy(temp,pwd);
-    strcat(temp,account->salt);
+    strcpy(temp, pwd);
+    strcat(temp, account.salt);
 
-    generateSHA256sum(temp,temp);
+    generateSHA256sum(temp, temp);
 
-    if(strcmp(temp,account->hash) == 0)
+    if (strcmp(temp, account.hash) == 0)
         return true;
     else
         return false;
-
 }
 
-int handleRequest(tlv_request_t request){
+int op_createAccount(req_value_t request_value, tlv_reply_t *reply)
+{
+
+    req_header_t header = request_value.header;
+
+    reply->type = OP_CREATE_ACCOUNT;
+
+    if (header.account_id != ADMIN_ACCOUNT_ID)
+    {
+
+        reply->value.header.ret_code = RC_OP_NALLOW;
+
+        return -1;
+    }
+
+    bank_account_t newAccount = createBankAccount(request_value.create.account_id, request_value.create.password, request_value.create.password);
+
+    if (insertBankAccount(newAccount) == ERROR_ACCOUNT_LIMIT_EXCEEDED)
+    {
+
+        reply->value.header.ret_code = RC_OTHER;
+
+        return -2;
+    }
+
+    reply->value.header.account_id = request_value.header.account_id;
+    reply->value.header.ret_code = RC_OK;
+
+    return 0;
+}
+
+int op_checkBalance(req_value_t request_value, tlv_reply_t *reply)
+{
+
+    req_header_t header = request_value.header;
+
+    reply->type = OP_BALANCE;
+
+    if (header.account_id == ADMIN_ACCOUNT_ID)
+    {
+
+        reply->value.header.ret_code = RC_OP_NALLOW;
+
+        return -1;
+    }
+
+    bank_account_t account = findBankAccount(request_value.header.account_id);
+
+
+    reply->value.header.account_id = request_value.header.account_id;
+    reply->value.header.ret_code = RC_OK;
+    reply->value.balance.balance = account.balance;
+
+    return 0;
+}
+
+int op_transfer(req_value_t request_value, tlv_reply_t *reply)
+{
+
+    req_header_t header = request_value.header;
+    bank_account_t* source = NULL,*dest = NULL;
+
+    reply->type = OP_TRANSFER;
+
+    if (header.account_id == ADMIN_ACCOUNT_ID)
+    {
+
+        reply->value.header.ret_code = RC_OP_NALLOW;
+
+        return -1;
+    }
+
+    if(header.account_id == request_value.transfer.account_id){
+
+        reply->value.header.ret_code = RC_SAME_ID;
+
+        return -2;
+    }
+
+    pthread_mutex_lock(&account_array_mutex);
+
+    for (unsigned int i = 0; i < accounts.next_account_index; i++)
+    {
+
+        if (accounts.array[i].account_id == request_value.transfer.account_id){
+
+            dest = &accounts.array[i]; 
+        }
+
+        if (accounts.array[i].account_id == request_value.header.account_id){
+
+            source = &accounts.array[i]; 
+        }
+            
+    }
+
+    if(dest == NULL){
+
+        reply->value.header.ret_code = RC_ID_NOT_FOUND;
+
+        return -3;
+    }
+
+    if(source->balance < request_value.transfer.amount){
+
+        reply->value.header.ret_code = RC_NO_FUNDS;
+
+        return -4;
+    }
+
+        
+    if(dest->balance + request_value.transfer.amount > MAX_BALANCE){
+
+        reply->value.header.ret_code = RC_TOO_HIGH;
+
+        return -5;
+    }
+
+    dest->balance += request_value.transfer.amount;
+    source->balance -= request_value.transfer.amount;
+
+    pthread_mutex_unlock(&account_array_mutex);
+
+
+    reply->value.header.account_id = request_value.header.account_id;
+    reply->value.header.ret_code = RC_OK;
+
+    return 0;
+}
+
+int handleRequest(tlv_request_t request)
+{
 
     enum op_type type = request.type;
-    // uint32_t size = request.length;
     req_header_t header = request.value.header;
-    // tlv_reply_t reply;
 
-    if(checkRequestHeader(header) != 0)
-        return -1;
+    tlv_reply_t reply;
+    reply.length = sizeof(tlv_reply_t);
+    reply.value.header.account_id = request.value.header.account_id;
 
-    switch (type)
+    int headerCheckStatus = checkRequestHeader(header);
+
+    if (headerCheckStatus != 0)
     {
-    case OP_CREATE_ACCOUNT:
 
-        break;
+        if (headerCheckStatus == -1)
+            reply.value.header.ret_code = RC_ID_NOT_FOUND;
 
-    case OP_BALANCE:
-    
-        break;
+        if (headerCheckStatus == -2)
+            reply.value.header.ret_code = RC_LOGIN_FAIL;
+    }
+    else
+    {
 
-    case OP_TRANSFER:
-    
-        break;
+        switch (type)
+        {
+        case OP_CREATE_ACCOUNT:
 
-    case OP_SHUTDOWN:
-    
-        break;
-    
-    default:
-        break;
+            op_createAccount(request.value, &reply);
+
+            break;
+
+        case OP_BALANCE:
+
+            op_checkBalance(request.value, &reply);
+
+            break;
+
+        case OP_TRANSFER:
+
+            op_transfer(request.value, &reply);
+
+            break;
+
+        case OP_SHUTDOWN:
+
+            break;
+
+        default:
+            break;
+        }
     }
 
     // enviar resposta
 
-    return 0;
-}
-
-
-int setupRequestFIFO(){
-
-    mkfifo("/tmp/secure_srv",REQUEST_FIFO_PERM);
-    request_fifo_fd = open("/tmp/secure_srv",O_RDWR);
+    
 
     return 0;
 }
 
-int waitForRequests(){
+int setupRequestFIFO()
+{
 
-    while(true){
+    mkfifo("/tmp/secure_srv", REQUEST_FIFO_PERM);
+    request_fifo_fd = open("/tmp/secure_srv", O_RDWR);
+
+    return 0;
+}
+
+int waitForRequests()
+{
+
+    while (true)
+    {
 
         tlv_request_t received_request;
-        read(request_fifo_fd,&received_request,sizeof(tlv_reply_t));
+        read(request_fifo_fd, &received_request, sizeof(tlv_reply_t));
 
         sem_wait(&empty);
         pthread_mutex_lock(&request_queue_mutex);
 
-        queue_push(&requests,received_request);
+        queue_push(&requests, received_request);
 
         pthread_mutex_unlock(&request_queue_mutex);
         sem_post(&full);
@@ -298,13 +471,13 @@ int waitForRequests(){
     }
 
     return 0;
-
 }
 
-int initSyncMechanisms(size_t thread_cnt){
+int initSyncMechanisms(size_t thread_cnt)
+{
 
-    sem_init(&empty,0,thread_cnt);
-    sem_init(&full,0,0);
+    sem_init(&empty, 0, thread_cnt);
+    sem_init(&full, 0, 0);
 
     return 0;
 }

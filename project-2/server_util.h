@@ -20,6 +20,8 @@
 #define WRITE 1
 #define SHA256_SIZE                   64
 #define REQUEST_FIFO_PERM             0660
+#define ERROR_ACCOUNT_LIMIT_EXCEEDED  -2
+#define ERROR_ACCOUNT_ID              (MAX_BANK_ACCOUNTS +1)
 
 
 typedef struct bank_account_array{
@@ -40,7 +42,9 @@ typedef struct bank_office{         // TODO: mudar nome
 
 bank_account_t createBankAccount(uint32_t id, char* password, uint32_t balance);
 bank_account_t createAdminBankAccount(char* password);
-bank_account_t* findBankAccount(uint32_t id);
+bank_account_t findBankAccount(uint32_t id);
+
+bank_account_t errorAccount();
 
 int createBankOffices(unsigned int quantity);
 void *bank_office_func_stub(void *stub);
@@ -60,7 +64,11 @@ int initSyncMechanisms(size_t thread_cnt);
 
 int handleRequest(tlv_request_t request);
 int checkRequestHeader(req_header_t header);
-bool passwordIsCorrect(bank_account_t* account,char* pwd);
+bool passwordIsCorrect(bank_account_t account,char* pwd);
+
+int op_createAccount(req_value_t request_value, tlv_reply_t* reply);
+int op_checkBalance(req_value_t request_value, tlv_reply_t* reply);
+int op_transfer(req_value_t request_value, tlv_reply_t* reply);
 
 
 #endif
