@@ -100,8 +100,14 @@ bank_account_t findBankAccount(uint32_t id)
     for (unsigned int i = 0; i < accounts.next_account_index; i++)
     {
 
-        if (accounts.array[i].account_id == id)
-            return accounts.array[i];
+        bank_account_t currentAccount = accounts.array[i];
+
+        if (currentAccount.account_id == id){
+
+            pthread_mutex_unlock(&account_array_mutex);        
+            return currentAccount;
+        }
+            
     }
 
     pthread_mutex_unlock(&account_array_mutex);
@@ -156,12 +162,19 @@ int insertBankAccount(bank_account_t newAccount)
 
     pthread_mutex_lock(&account_array_mutex);
 
-    if (accounts.next_account_index == MAX_BANK_ACCOUNTS)
+    if (accounts.next_account_index == MAX_BANK_ACCOUNTS){
+
+        pthread_mutex_unlock(&account_array_mutex);
         return -1;
+    }
+        
 
-    if (existsBankAccount(newAccount.account_id))
+    if (existsBankAccount(newAccount.account_id)){
+
+        pthread_mutex_unlock(&account_array_mutex);
         return -2;
-
+    }
+        
     accounts.array[accounts.next_account_index] = newAccount;
 
     pthread_mutex_unlock(&account_array_mutex);
@@ -176,8 +189,12 @@ bool existsBankAccount(uint32_t id)
     for (unsigned int i = 0; i < accounts.next_account_index; i++)
     {
 
-        if (accounts.array[i].account_id == id)
+        if (accounts.array[i].account_id == id){
+
+            pthread_mutex_unlock(&account_array_mutex);
             return true;
+        }
+            
     }
 
     pthread_mutex_unlock(&account_array_mutex);
@@ -266,7 +283,7 @@ int op_createAccount(req_value_t request_value, tlv_reply_t *reply)
         return -1;
     }
 
-    bank_account_t newAccount = createBankAccount(request_value.create.account_id, request_value.create.password, request_value.create.password);
+    bank_account_t newAccount = createBankAccount(request_value.create.account_id, request_value.create.password, request_value.create.balance);
 
     if (insertBankAccount(newAccount) == ERROR_ACCOUNT_LIMIT_EXCEEDED)
     {
@@ -349,6 +366,7 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply)
 
     if(dest == NULL){
 
+        pthread_mutex_unlock(&account_array_mutex);
         reply->value.header.ret_code = RC_ID_NOT_FOUND;
 
         return -3;
@@ -356,6 +374,7 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply)
 
     if(source->balance < request_value.transfer.amount){
 
+        pthread_mutex_unlock(&account_array_mutex);
         reply->value.header.ret_code = RC_NO_FUNDS;
 
         return -4;
@@ -364,6 +383,7 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply)
         
     if(dest->balance + request_value.transfer.amount > MAX_BALANCE){
 
+        pthread_mutex_unlock(&account_array_mutex);
         reply->value.header.ret_code = RC_TOO_HIGH;
 
         return -5;
@@ -436,7 +456,11 @@ int handleRequest(tlv_request_t request)
 
     // enviar resposta
 
-    
+    char user_id[WIDTH_ID+1];
+    char fifo_name[USER_FIFO_PATH_LEN] = USER_FIFO_PATH_PREFIX;
+    sprintf(user_id,"%05d", request.value.header.pid);
+    strcat(fifo_name,user_id);
+
 
     return 0;
 }
@@ -444,8 +468,8 @@ int handleRequest(tlv_request_t request)
 int setupRequestFIFO()
 {
 
-    mkfifo("/tmp/secure_srv", REQUEST_FIFO_PERM);
-    request_fifo_fd = open("/tmp/secure_srv", O_RDWR);
+    mkfifo(SERVER_FIFO_PATH, REQUEST_FIFO_PERM);
+    request_fifo_fd = open(SERVER_FIFO_PATH, O_RDWR);
 
     return 0;
 }
