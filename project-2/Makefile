@@ -1,15 +1,20 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -pthread #-Werror -pedantic
 ODIR = build
-TARGET = server
-OBJS = $(ODIR)/server_util.o $(ODIR)/server.o $(ODIR)/request_queue.o
+TARGET_SERVER = server
+TARGET_USER = user
+OBJS_SERVER = $(ODIR)/server_util.o $(ODIR)/server.o $(ODIR)/request_queue.o
+OBJS_USER = $(ODIR)/user_util.o $(ODIR)/user.o
 
 .PHONY: all clean
 
-all: $(TARGET)
+all: $(TARGET_SERVER) $(TARGET_USER)
 
-$(TARGET) : $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
+$(TARGET_SERVER) : $(OBJS_SERVER)
+	$(CC) $(CFLAGS) -o $(TARGET_SERVER) $(OBJS_SERVER)
+
+$(TARGET_USER) : $(OBJS_USER)
+	$(CC) $(CFLAGS) -o $(TARGET_USER) $(OBJS_USER)
 
 ifdef DEV_INFO
 DEV_FLAGS = -save-temps
@@ -21,6 +26,7 @@ $(ODIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(DEV_FLAGS) -MMD -c $< -o $@
 
 clean:
-	rm -f $(TARGET) $(ODIR)/*.o $(ODIR)/*.d $(ODIR)/*.i $(ODIR)/*.s *.txt *.csv
+	rm -f $(TARGET_SERVER) $(ODIR)/*.o $(ODIR)/*.d $(ODIR)/*.i $(ODIR)/*.s *.txt *.csv
+	rm -f $(TARGET_USER) $(ODIR)/*.o $(ODIR)/*.d $(ODIR)/*.i $(ODIR)/*.s *.txt *.csv
 
 -include $(TARGET:=.d)
