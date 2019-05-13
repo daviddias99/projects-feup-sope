@@ -324,12 +324,14 @@ int op_checkBalance(req_value_t request_value, tlv_reply_t *reply)
     reply->value.header.ret_code = RC_OK;
     reply->value.balance.balance = account.balance;
 
+    print_dbg("balance %d\n", reply->value.balance.balance);
+
     return 0;
 }
 
 int op_transfer(req_value_t request_value, tlv_reply_t *reply)
 {
-
+    
     req_header_t header = request_value.header;
     bank_account_t* source = NULL,*dest = NULL;
 
@@ -429,11 +431,14 @@ int handleRequest(tlv_request_t request)
     }
     else
     {
+        int ret;
+
         switch (type)
         {
         case OP_CREATE_ACCOUNT:
 
-            op_createAccount(request.value, &reply);
+            ret = op_createAccount(request.value, &reply);
+            print_dbg("ret create account %d\n", ret);
 
             break;
 
