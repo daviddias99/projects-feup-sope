@@ -2,6 +2,7 @@
 
 int request_fifo_fd;
 int response_fifo_fd;
+char response_filename[USER_FIFO_PATH_LEN];
 
 void alarm_handler(int signo){
     printf("Response took too long!\n");
@@ -23,6 +24,7 @@ int setupResponseFIFO(){
     pid_t pid = getpid();
     
     sprintf(fifo_name, "%s%05d", USER_FIFO_PATH_PREFIX, pid);
+    memcpy(response_filename, fifo_name, USER_FIFO_PATH_LEN);
 
     mkfifo(fifo_name, RESPONSE_FIFO_PERM);
 
@@ -43,7 +45,7 @@ int closeComunication(){ // change name?
         return 1;
     }
 
-    remove(response_fifo_fd);
+    remove(response_filename);
 
     return 0;
 }
@@ -60,6 +62,8 @@ int recordOperation(tlv_request_t* request, tlv_reply_t* reply){
     // TODO: Implement synchronization?
     logRequest(fd, pid, request); // Is the second argument the process PID??
     logReply(fd, pid, reply);
+
+    return 0;
 }
 
 bool validAccount(char* accountID){
