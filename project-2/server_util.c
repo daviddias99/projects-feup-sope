@@ -3,12 +3,12 @@
 
 bank_account_array_t accounts;
 int request_fifo_fd;
+int request_fifo_fd_DUMMY;
 
 sem_t empty;
 sem_t full;
 pthread_mutex_t request_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t account_array_mutex = PTHREAD_MUTEX_INITIALIZER;
-RequestQueue_t requests;
 bank_office_t offices[MAX_BANK_OFFICES];
 
 bool passwordIsValid(char *password)
@@ -160,13 +160,19 @@ int generateSHA256sum(char *str, char *result)
 int insertBankAccount(bank_account_t newAccount)
 {
 
+    
+
     pthread_mutex_lock(&account_array_mutex);
+
+    
 
     if (accounts.next_account_index == MAX_BANK_ACCOUNTS){
 
         pthread_mutex_unlock(&account_array_mutex);
         return -1;
     }
+
+    
         
 
     if (existsBankAccount(newAccount.account_id)){
@@ -174,17 +180,21 @@ int insertBankAccount(bank_account_t newAccount)
         pthread_mutex_unlock(&account_array_mutex);
         return -2;
     }
+
+    
         
     accounts.array[accounts.next_account_index] = newAccount;
 
     pthread_mutex_unlock(&account_array_mutex);
+
+    
 
     return 0;
 }
 
 bool existsBankAccount(uint32_t id)
 {
-    pthread_mutex_lock(&account_array_mutex);
+    // pthread_mutex_lock(&account_array_mutex);
 
     for (unsigned int i = 0; i < accounts.next_account_index; i++)
     {
@@ -197,7 +207,7 @@ bool existsBankAccount(uint32_t id)
             
     }
 
-    pthread_mutex_unlock(&account_array_mutex);
+    // pthread_mutex_unlock(&account_array_mutex);
 
     return false;
 }
@@ -462,14 +472,27 @@ int handleRequest(tlv_request_t request)
     strcat(fifo_name,user_id);
 
 
+    int reply_fifo_status = open(fifo_name,O_WRONLY | O_NONBLOCK);
+
+    if(reply_fifo_status == ENXIO)
+        return -1;
+
+
     return 0;
 }
 
 int setupRequestFIFO()
 {
 
+    
+
     mkfifo(SERVER_FIFO_PATH, REQUEST_FIFO_PERM);
-    request_fifo_fd = open(SERVER_FIFO_PATH, O_RDWR);
+    request_fifo_fd = open(SERVER_FIFO_PATH, O_RDONLY | O_NONBLOCK);
+
+    mkfifo(SERVER_FIFO_PATH, REQUEST_FIFO_PERM);
+    request_fifo_fd_DUMMY = open(SERVER_FIFO_PATH, O_WRONLY);
+
+    
 
     return 0;
 }
@@ -483,6 +506,7 @@ int waitForRequests()
         tlv_request_t received_request;
         read(request_fifo_fd, &received_request, sizeof(tlv_reply_t));
 
+        print_dbg("--- %s \n",received_request.value.header.password);
         sem_wait(&empty);
         pthread_mutex_lock(&request_queue_mutex);
 

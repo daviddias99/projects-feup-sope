@@ -26,6 +26,8 @@
 #define ERROR_ACCOUNT_LIMIT_EXCEEDED  -2
 #define ERROR_ACCOUNT_ID              (MAX_BANK_ACCOUNTS +1)
 #define CANCEL_ALARM                  0
+#define UNUSED(x) (void)(x)
+
 
 #define VALID_OPERATION               0
 #define ERROR_INVALID_ACCOUNT         1

@@ -4,6 +4,8 @@ int request_fifo_fd;
 int response_fifo_fd;
 
 void alarm_handler(int signo){
+
+    UNUSED(signo);
     printf("Response took too long!\n");
     closeComunication();
 
@@ -12,8 +14,12 @@ void alarm_handler(int signo){
 
 int setupRequestFIFO(){
 
+    
+
     if((request_fifo_fd= open(SERVER_FIFO_PATH, O_WRONLY)) == -1)
         return 1;
+
+    
 
     return 0;
 }
@@ -26,7 +32,7 @@ int setupResponseFIFO(){
 
     mkfifo(fifo_name, RESPONSE_FIFO_PERM);
 
-    if((response_fifo_fd = open(fifo_name, O_RDONLY)) == -1)
+    if((response_fifo_fd = open(fifo_name, O_RDONLY | O_NONBLOCK)) == -1)
         return 1;
 
     return 0;
@@ -43,7 +49,7 @@ int closeComunication(){ // change name?
         return 1;
     }
 
-    remove(response_fifo_fd);
+    // remove(response_fifo_fd);
 
     return 0;
 }
@@ -60,6 +66,8 @@ int recordOperation(tlv_request_t* request, tlv_reply_t* reply){
     // TODO: Implement synchronization?
     logRequest(fd, pid, request); // Is the second argument the process PID??
     logReply(fd, pid, reply);
+
+    return 0;
 }
 
 bool validAccount(char* accountID){
@@ -133,12 +141,18 @@ bool validArguments(char* accountID, char* operation, char* arguments){
 }
 
 bool validCreationOperation(char* accountID, char* arguments){
+
     int ID = atoi(accountID);
+    
+    char* temp_Args = (char*) malloc(sizeof(char) * strlen(arguments) + 1);
+
+    memcpy(temp_Args,arguments,strlen(arguments)+1);
 
     if(ID != 0)
         return false;
 
-    char* newAccountID = strtok(arguments, " ");
+    char* newAccountID = strtok(temp_Args, " ");
+
 
     if(!validAccount(newAccountID))
         return false;
@@ -146,6 +160,7 @@ bool validCreationOperation(char* accountID, char* arguments){
     char* token = strtok(NULL, " ");
 
     long unsigned int balance = atoi(token);
+
 
     if(balance < 1)
         return false;
@@ -163,9 +178,7 @@ bool validCreationOperation(char* accountID, char* arguments){
     if(token != NULL)
         return false;
 
-    free(newAccountID);
-    free(token);
-    free(password);
+     
 
     return true;
 }
@@ -210,9 +223,7 @@ bool validTransferOperation(char* accountID, char* arguments){
 
     if(token != NULL)
         return false;
-
-    free(recipientID);
-    free(token);        
+  
     
     return true;
 }
@@ -252,19 +263,29 @@ int checkArguments(char* accountID, char* password, char* delay, char* operation
 int formatCreateAccount(req_value_t* request_value, char* arguments){
     req_create_account_t create_account;
 
+    
+
+    
+
     char* accountID = strtok(arguments, " ");
     char* balance = strtok(NULL, " ");
     char* password = strtok(NULL, " ");
 
+    
+
+    print_dbg("--%s | %s | %s | %s \n",arguments,accountID,balance,password);
+
     create_account.account_id = atoi(accountID);
     create_account.balance = atoi(balance);
+
+       
     memcpy(create_account.password, password, MAX_PASSWORD_LEN);
+
+    
     
     request_value->create = create_account;
 
-    free(accountID);
-    free(balance);
-    free(password);
+    
 
     return 0;
 }
@@ -281,9 +302,6 @@ int formatTranfer(req_value_t* request_value, char* arguments){
     tranfer.amount = atoi(amount);
 
     request_value->transfer = tranfer;
-
-    free(recipientID);
-    free(amount);
 
     return 0;
 }
@@ -308,7 +326,9 @@ int formatValue(req_value_t* request_value, char* accountID, char* password, cha
 
     switch(op_number){
         case 0:
+            
             formatCreateAccount(request_value, arguments);
+            
             break;
         case 1:
             break;
@@ -325,8 +345,12 @@ int formatValue(req_value_t* request_value, char* accountID, char* password, cha
 int formatRequest(tlv_request_t* request, char* accountID, char* password, char* delay, char* operation, char* arguments){
     
     req_value_t request_value;
+
+    
     
     formatValue(&request_value, accountID, password, delay, operation, arguments);
+
+    
 
     int op_type = atoi(operation);
 

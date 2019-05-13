@@ -1,5 +1,17 @@
 #include "request_queue.h"
 
+#include "debug.h"
+
+RequestQueue_t* queue_create(){
+
+    RequestQueue_t* newQueue = malloc(sizeof(RequestQueue_t));
+    newQueue->header = malloc(sizeof(RequestQueueNode_t));
+    newQueue->header->next = NULL;
+
+    return newQueue;
+
+}
+
 int queue_insert(RequestQueue_t *list, tlv_request_t newElement, int position)
 {
 
@@ -83,7 +95,6 @@ int queue_delete(RequestQueue_t *list, int position)
 
 int queue_push(RequestQueue_t *list, tlv_request_t newElement)
 {
-
     return queue_insert(list, newElement, list->size);
 }
 

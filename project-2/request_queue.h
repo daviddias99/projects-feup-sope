@@ -20,6 +20,7 @@ typedef struct RequestQueue{
 }RequestQueue_t;
 
 
+RequestQueue_t* queue_create();
 int queue_insert(RequestQueue_t* list,tlv_request_t newElement, int position);
 int queue_delete(RequestQueue_t* list, int position);
 int queue_push(RequestQueue_t* list, tlv_request_t newElement);

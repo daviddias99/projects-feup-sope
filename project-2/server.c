@@ -25,14 +25,17 @@ int main(int argc, char* argv[]){
     bank_account_t adminAccount = createAdminBankAccount(adminPassword);
 
     memset(argv[2],0,strlen(argv[2])); // don't store the admins password in plain text
+
+    requests = *queue_create();
     insertBankAccount(adminAccount);
+
     createBankOffices(bankOfficeCount);
 
     initSyncMechanisms((size_t)bankOfficeCount);
 
     setupRequestFIFO();
+
     waitForRequests();
-    
 
     return 0;
 }
