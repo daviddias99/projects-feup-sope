@@ -9,7 +9,6 @@ RequestQueue_t* queue_create(){
     newQueue->header->next = NULL;
 
     return newQueue;
-
 }
 
 int queue_insert(RequestQueue_t *list, tlv_request_t newElement, int position)
