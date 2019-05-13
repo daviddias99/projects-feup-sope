@@ -101,6 +101,8 @@ bank_account_t findBankAccount(uint32_t id)
     {
 
         bank_account_t currentAccount = accounts.array[i];
+        print_dbg("current account id %d\n", currentAccount.account_id);
+
 
         if (currentAccount.account_id == id){
 
@@ -159,35 +161,22 @@ int generateSHA256sum(char *str, char *result)
 
 int insertBankAccount(bank_account_t newAccount)
 {
-
-    
-
     pthread_mutex_lock(&account_array_mutex);
-
-    
 
     if (accounts.next_account_index == MAX_BANK_ACCOUNTS){
 
         pthread_mutex_unlock(&account_array_mutex);
         return -1;
     }
-
-    
-        
-
     if (existsBankAccount(newAccount.account_id)){
 
         pthread_mutex_unlock(&account_array_mutex);
         return -2;
     }
-
-    
         
-    accounts.array[accounts.next_account_index] = newAccount;
-
-    pthread_mutex_unlock(&account_array_mutex);
-
+    accounts.array[accounts.next_account_index++] = newAccount;
     
+    pthread_mutex_unlock(&account_array_mutex);
 
     return 0;
 }
@@ -230,18 +219,21 @@ int createBankOffices(unsigned int quantity)
 
 void *bank_office_func_stub(void *stub)
 {
+    //int semval = 0;
 
     while (true)
-    {
-
-        sem_wait(&full);
+    {   
+      /*  sem_getvalue(&full, &semval);
+        print_dbg("%ld before wait full %d\n", pthread_self(), semval);*/
+        sem_wait(&full); 
         pthread_mutex_lock(&request_queue_mutex);
 
         tlv_request_t currentRequest = queue_pop(&requests);
 
         pthread_mutex_unlock(&request_queue_mutex);
         sem_post(&empty);
-
+       /* sem_getvalue(&empty, &semval);
+        print_dbg("%ld after post empty %d\n", pthread_self(), semval);*/
         handleRequest(currentRequest);
     }
 
@@ -251,6 +243,7 @@ void *bank_office_func_stub(void *stub)
 int checkRequestHeader(req_header_t header)
 {
 
+    print_dbg("account id %d\n", header.account_id);
     bank_account_t account = findBankAccount(header.account_id);
 
     if (account.account_id == ERROR_ACCOUNT_ID)
@@ -413,7 +406,6 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply)
 
 int handleRequest(tlv_request_t request)
 {
-
     enum op_type type = request.type;
     req_header_t header = request.value.header;
 
@@ -422,6 +414,9 @@ int handleRequest(tlv_request_t request)
     reply.value.header.account_id = request.value.header.account_id;
 
     int headerCheckStatus = checkRequestHeader(header);
+/*
+    print_dbg("pthread_self %ld\n", pthread_self());*/
+    print_dbg("header status 1: %d\n", headerCheckStatus);
 
     if (headerCheckStatus != 0)
     {
@@ -434,7 +429,6 @@ int handleRequest(tlv_request_t request)
     }
     else
     {
-
         switch (type)
         {
         case OP_CREATE_ACCOUNT:
@@ -464,6 +458,9 @@ int handleRequest(tlv_request_t request)
         }
     }
 
+    print_dbg("header status 2: %d\n", headerCheckStatus);
+
+
     // enviar resposta
 
     char user_id[WIDTH_ID+1];
@@ -483,24 +480,33 @@ int handleRequest(tlv_request_t request)
 
 int setupRequestFIFO()
 {
+<<<<<<< HEAD
 
     mkfifo(SERVER_FIFO_PATH, REQUEST_FIFO_PERM);
     request_fifo_fd_DUMMY = open(SERVER_FIFO_PATH, O_WRONLY);
     request_fifo_fd = open(SERVER_FIFO_PATH, O_RDONLY | O_NONBLOCK);
+=======
+    mkfifo(SERVER_FIFO_PATH, REQUEST_FIFO_PERM);
+    request_fifo_fd = open(SERVER_FIFO_PATH, O_RDONLY);
+
+    request_fifo_fd_DUMMY = open(SERVER_FIFO_PATH, O_WRONLY);   
+>>>>>>> 3a6fe283eef36607657e168cf4dc70b54cf84f7a
 
     return 0;
 }
 
 int waitForRequests()
 {
-
     while (true)
     {
+       // int semval = 0;
 
         tlv_request_t received_request;
-        read(request_fifo_fd, &received_request, sizeof(tlv_reply_t));
-
+        read(request_fifo_fd, &received_request, sizeof(tlv_request_t));
+/*
         print_dbg("--- %s \n",received_request.value.header.password);
+        sem_getvalue(&empty, &semval);
+        print_dbg("%ld before wait empty %d\n", pthread_self(), semval);*/
         sem_wait(&empty);
         pthread_mutex_lock(&request_queue_mutex);
 
@@ -508,9 +514,15 @@ int waitForRequests()
 
         pthread_mutex_unlock(&request_queue_mutex);
         sem_post(&full);
+<<<<<<< HEAD
 
 
         handleRequest(received_request);
+=======
+       /* sem_getvalue(&full, &semval);
+        
+        print_dbg("%ld after post full %d\n", pthread_self(), semval);*/
+>>>>>>> 3a6fe283eef36607657e168cf4dc70b54cf84f7a
     }
 
     return 0;
