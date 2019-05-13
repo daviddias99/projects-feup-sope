@@ -200,10 +200,14 @@ bool validBalanceOperation(char* accountID, char* arguments){
 bool validTransferOperation(char* accountID, char* arguments){
     int ID = atoi(accountID);
 
+    char* temp_Args = (char*) malloc(sizeof(char) * strlen(arguments) + 1);
+
+    memcpy(temp_Args,arguments,strlen(arguments)+1);
+
     if(ID == 0)
         return false;
 
-    char* recipientID = strtok(arguments, " ");
+    char* recipientID = strtok(temp_Args, " ");
 
     if(!validAccount(recipientID) || !strcmp(accountID, recipientID))
         return false;
