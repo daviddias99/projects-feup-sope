@@ -466,21 +466,21 @@ int handleRequest(tlv_request_t request)
     print_dbg("header status 2: %d\n", headerCheckStatus);
 
 
-    // enviar resposta
+    // send reply
 
     char user_id[WIDTH_ID+1];
-    char fifo_name[USER_FIFO_PATH_LEN] = USER_FIFO_PATH_PREFIX;
+    char reply_fifo_name[USER_FIFO_PATH_LEN] = USER_FIFO_PATH_PREFIX;
     sprintf(user_id,"%05d", request.value.header.pid);
-    strcat(fifo_name,user_id);
+    strcat(reply_fifo_name,user_id);
 
+    int reply_fifo_fd = open(reply_fifo_name,O_WRONLY | O_NONBLOCK);
 
-    int reply_fifo_status = open(fifo_name,O_WRONLY | O_NONBLOCK);
-
-    if(reply_fifo_status == ENXIO)
+    if(reply_fifo_fd == ENXIO)
         return -1;
 
+    write(reply_fifo_fd,&reply,sizeof(tlv_reply_t));
 
-    write(fifo_name,&reply,sizeof(tlv_reply_t));
+    close(reply_fifo_fd);
 
     return 0;
 }
