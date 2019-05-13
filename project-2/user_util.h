@@ -5,8 +5,10 @@
 #include "stdlib.h"
 #include "errno.h"
 #include "stdbool.h"
+#include "sope.h"
 #include "constants.h"
 #include "types.h"
+#include "signal.h"
 #include "string.h"
 #include "time.h"
 #include "pthread.h"
@@ -23,6 +25,7 @@
 #define RESPONSE_FIFO_PERM            0660
 #define ERROR_ACCOUNT_LIMIT_EXCEEDED  -2
 #define ERROR_ACCOUNT_ID              (MAX_BANK_ACCOUNTS +1)
+#define CANCEL_ALARM                  0
 
 #define VALID_OPERATION               0
 #define ERROR_INVALID_ACCOUNT         1
@@ -31,9 +34,15 @@
 #define ERROR_INVALID_OPERATION       4
 #define ERROR_INVALID_ARGUMENTS       5
 
+void alarm_handler(int signo);
+
 int setupRequestFIFO();
 
 int setupResponseFIFO();
+
+int closeComunication();
+
+int recordOperation(tlv_request_t* request, tlv_reply_t* reply);
 
 bool validAccount(char* accountID);
 
@@ -67,6 +76,6 @@ int formatRequest(tlv_request_t* request, char* accountID, char* password, char*
 
 int sendRequest(tlv_request_t* request);
 
-int waitResponse(tlv_reply_t* reply);
+int waitResponse(tlv_request_t* request, tlv_reply_t* reply);
 
 #endif

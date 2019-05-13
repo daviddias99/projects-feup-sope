@@ -11,6 +11,7 @@ int main(int argc, char* argv[]){
         exit(1); // TODO: Show error message depending on return value?
 
     tlv_request_t request;
+    tlv_reply_t reply;
     
     formatRequest(&request, argv[1], argv[2], argv[3], argv[4], argv[5]);
 
@@ -20,9 +21,10 @@ int main(int argc, char* argv[]){
     if(setupRequestFIFO() == 1)
         exit(3);
 
-    sendRequest(&request);
+    waitResponse(&request, &reply);
 
-    
+    if(recordOperation(&request, &reply) == 1)
+        exit(4);
 
     return 0;
 }

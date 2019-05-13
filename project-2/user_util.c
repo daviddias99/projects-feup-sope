@@ -3,6 +3,13 @@
 int request_fifo_fd;
 int response_fifo_fd;
 
+void alarm_handler(int signo){
+    printf("Response took too long!\n");
+    closeComunication();
+
+    raise(SIGKILL); // Ends the program
+}
+
 int setupRequestFIFO(){
 
     if((request_fifo_fd= open(SERVER_FIFO_PATH, O_WRONLY)) == -1)
@@ -23,6 +30,36 @@ int setupResponseFIFO(){
         return 1;
 
     return 0;
+}
+
+int closeComunication(){ // change name?
+    if(close(request_fifo_fd) == -1){
+        perror("Couldn't close Request FIFO");
+        return 1;
+    }
+
+    if(close(response_fifo_fd) == -1){
+        perror("Couldn't close Response FIFO");
+        return 1;
+    }
+
+    remove(response_fifo_fd);
+
+    return 0;
+}
+
+int recordOperation(tlv_request_t* request, tlv_reply_t* reply){
+    int fd;
+    int pid = getpid();
+
+    if((fd = open(USER_LOGFILE, O_WRONLY | O_APPEND)) == -1){
+        perror("Failed to open User Logfile.");
+        return 1;
+    }
+
+    // TODO: Implement synchronization?
+    logRequest(fd, pid, request); // Is the second argument the process PID??
+    logReply(fd, pid, reply);
 }
 
 bool validAccount(char* accountID){
@@ -302,6 +339,32 @@ int formatRequest(tlv_request_t* request, char* accountID, char* password, char*
 
 int sendRequest(tlv_request_t* request){
     write(request_fifo_fd, request, request->length);
+
+    return 0;
+}
+
+int waitResponse(tlv_request_t* request, tlv_reply_t* reply){
+    struct sigaction action;
+
+    action.sa_handler = alarm_handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+
+    if (sigaction(SIGALRM,&action,NULL) < 0){
+        perror("Alarm handler setup failed!");
+        return 1;
+    }
+
+    sendRequest(request);
+
+    alarm(FIFO_TIMEOUT_SECS);
+
+    while(read(response_fifo_fd, reply, sizeof(reply)) == 0){ // Not sure if size is in the correct way to do it
+    }
+
+    alarm(CANCEL_ALARM);
+
+    closeComunication();
 
     return 0;
 }
