@@ -2,6 +2,7 @@
 
 int request_fifo_fd;
 int response_fifo_fd;
+char response_filename[USER_FIFO_PATH_LEN];
 
 void alarm_handler(int signo){
 
@@ -29,6 +30,7 @@ int setupResponseFIFO(){
     pid_t pid = getpid();
     
     sprintf(fifo_name, "%s%05d", USER_FIFO_PATH_PREFIX, pid);
+    memcpy(response_filename, fifo_name, USER_FIFO_PATH_LEN);
 
     mkfifo(fifo_name, RESPONSE_FIFO_PERM);
 
