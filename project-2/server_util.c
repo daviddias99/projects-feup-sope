@@ -484,15 +484,9 @@ int handleRequest(tlv_request_t request)
 int setupRequestFIFO()
 {
 
-    
-
-    mkfifo(SERVER_FIFO_PATH, REQUEST_FIFO_PERM);
-    request_fifo_fd = open(SERVER_FIFO_PATH, O_RDONLY | O_NONBLOCK);
-
     mkfifo(SERVER_FIFO_PATH, REQUEST_FIFO_PERM);
     request_fifo_fd_DUMMY = open(SERVER_FIFO_PATH, O_WRONLY);
-
-    
+    request_fifo_fd = open(SERVER_FIFO_PATH, O_RDONLY | O_NONBLOCK);
 
     return 0;
 }
@@ -514,6 +508,7 @@ int waitForRequests()
 
         pthread_mutex_unlock(&request_queue_mutex);
         sem_post(&full);
+
 
         handleRequest(received_request);
     }
