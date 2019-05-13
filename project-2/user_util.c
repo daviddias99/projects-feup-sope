@@ -389,8 +389,9 @@ int waitResponse(tlv_request_t* request, tlv_reply_t* reply){
 
     alarm(FIFO_TIMEOUT_SECS);
 
-    while(read(response_fifo_fd, reply, sizeof(reply)) == 0){ // Not sure if size is in the correct way to do it
-    }
+    read(response_fifo_fd, reply, sizeof(reply)); // Not sure if size is in the correct way to do it
+    printf("gotcha %d\n", reply->value.header.ret_code);
+    
 
     alarm(CANCEL_ALARM);
 
