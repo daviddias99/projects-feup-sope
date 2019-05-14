@@ -4,6 +4,7 @@
 bank_account_array_t accounts;
 int request_fifo_fd;
 int request_fifo_fd_DUMMY;
+int log_file_fd;
 
 sem_t empty;
 sem_t full;
@@ -173,6 +174,8 @@ int insertBankAccount(bank_account_t newAccount)
     }
         
     accounts.array[accounts.next_account_index++] = newAccount;
+
+    logAccountCreation(log_file_fd,pthread_self(),&accounts.array[accounts.next_account_index-1]);
     
     pthread_mutex_unlock(&account_array_mutex);
 
@@ -210,6 +213,7 @@ int createBankOffices(unsigned int quantity)
 
         pthread_create(&offices[i].tid, NULL, bank_office_func_stub, NULL);
         offices[i].id = i;
+        logBankOfficeOpen(log_file_fd,i,offices[i].tid);
     }
 
     return 0;
@@ -217,21 +221,19 @@ int createBankOffices(unsigned int quantity)
 
 void *bank_office_func_stub(void *stub)
 {
-    //int semval = 0;
 
     while (true)
     {   
-      /*  sem_getvalue(&full, &semval);
-        print_dbg("%ld before wait full %d\n", pthread_self(), semval);*/
+
         sem_wait(&full); 
         pthread_mutex_lock(&request_queue_mutex);
 
         tlv_request_t currentRequest = queue_pop(&requests);
+        logRequest(log_file_fd,pthread_self(),&currentRequest);
 
         pthread_mutex_unlock(&request_queue_mutex);
         sem_post(&empty);
-       /* sem_getvalue(&empty, &semval);
-        print_dbg("%ld after post empty %d\n", pthread_self(), semval);*/
+
         handleRequest(currentRequest);
     }
 
@@ -453,11 +455,6 @@ int handleRequest(tlv_request_t request)
         }
     }
 
-
-    int fd = open(SERVER_LOGFILE, O_WRONLY | O_APPEND);
-    logReply(fd,7,&reply);
-    // send reply
-
     sendReply(request,reply);    
 
     return 0;
@@ -477,7 +474,9 @@ int sendReply(tlv_request_t request, tlv_reply_t reply){
 
         return -1;
     }
-        
+    
+    logReply(log_file_fd,pthread_self(),&reply);
+
     write(reply_fifo_fd,&reply,sizeof(tlv_reply_t));
     close(reply_fifo_fd);
 
@@ -488,7 +487,6 @@ int setupRequestFIFO()
 {
     mkfifo(SERVER_FIFO_PATH, REQUEST_FIFO_PERM);
     request_fifo_fd = open(SERVER_FIFO_PATH, O_RDONLY);
-
     request_fifo_fd_DUMMY = open(SERVER_FIFO_PATH, O_WRONLY);   
 
     return 0;
@@ -498,14 +496,12 @@ int waitForRequests()
 {
     while (true)
     {
-       // int semval = 0;
-
         tlv_request_t received_request;
+
         read(request_fifo_fd, &received_request, sizeof(tlv_request_t));
-/*
-        print_dbg("--- %s \n",received_request.value.header.password);
-        sem_getvalue(&empty, &semval);
-        print_dbg("%ld before wait empty %d\n", pthread_self(), semval);*/
+        
+        logRequest(log_file_fd,pthread_self(),&received_request);
+
         sem_wait(&empty);
         pthread_mutex_lock(&request_queue_mutex);
 
@@ -513,9 +509,7 @@ int waitForRequests()
 
         pthread_mutex_unlock(&request_queue_mutex);
         sem_post(&full);
-       /* sem_getvalue(&full, &semval);
-        
-        print_dbg("%ld after post full %d\n", pthread_self(), semval);*/
+
     }
 
     return 0;
@@ -526,6 +520,15 @@ int initSyncMechanisms(size_t thread_cnt)
 
     sem_init(&empty, 0, thread_cnt);
     sem_init(&full, 0, 0);
+
+    return 0;
+}
+
+
+int openLogFile(){
+
+
+    log_file_fd = open(SERVER_LOGFILE,O_WRONLY | O_APPEND,0660);
 
     return 0;
 }

@@ -47,6 +47,8 @@ bank_account_t findBankAccount(uint32_t id);
 
 bank_account_t errorAccount();
 
+int openLogFile();
+
 int createBankOffices(unsigned int quantity);
 void *bank_office_func_stub(void *stub);
 
