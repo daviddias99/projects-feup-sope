@@ -10,6 +10,7 @@ sem_t empty;
 sem_t full;
 pthread_mutex_t request_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t account_array_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t log_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 bank_office_t offices[MAX_BANK_OFFICES];
 
 bool passwordIsValid(char *password)
@@ -175,7 +176,9 @@ int insertBankAccount(bank_account_t newAccount)
         
     accounts.array[accounts.next_account_index++] = newAccount;
 
+    pthread_mutex_lock(&log_file_mutex);
     logAccountCreation(log_file_fd,pthread_self(),&accounts.array[accounts.next_account_index-1]);
+    pthread_mutex_unlock(&log_file_mutex);
     
     pthread_mutex_unlock(&account_array_mutex);
 
@@ -213,7 +216,10 @@ int createBankOffices(unsigned int quantity)
 
         pthread_create(&offices[i].tid, NULL, bank_office_func_stub, NULL);
         offices[i].id = i;
+
+        pthread_mutex_lock(&log_file_mutex);
         logBankOfficeOpen(log_file_fd,i,offices[i].tid);
+        pthread_mutex_unlock(&log_file_mutex);
     }
 
     return 0;
@@ -229,7 +235,10 @@ void *bank_office_func_stub(void *stub)
         pthread_mutex_lock(&request_queue_mutex);
 
         tlv_request_t currentRequest = queue_pop(&requests);
+
+        pthread_mutex_lock(&log_file_mutex);
         logRequest(log_file_fd,pthread_self(),&currentRequest);
+        pthread_mutex_unlock(&log_file_mutex);
 
         pthread_mutex_unlock(&request_queue_mutex);
         sem_post(&empty);
@@ -475,7 +484,9 @@ int sendReply(tlv_request_t request, tlv_reply_t reply){
         return -1;
     }
     
+    pthread_mutex_lock(&log_file_mutex);
     logReply(log_file_fd,pthread_self(),&reply);
+    pthread_mutex_unlock(&log_file_mutex);
 
     write(reply_fifo_fd,&reply,sizeof(tlv_reply_t));
     close(reply_fifo_fd);
@@ -500,7 +511,9 @@ int waitForRequests()
 
         read(request_fifo_fd, &received_request, sizeof(tlv_request_t));
         
+        pthread_mutex_lock(&log_file_mutex);
         logRequest(log_file_fd,pthread_self(),&received_request);
+        pthread_mutex_unlock(&log_file_mutex);
 
         sem_wait(&empty);
         pthread_mutex_lock(&request_queue_mutex);
