@@ -16,6 +16,9 @@ $(TARGET_SERVER) : $(OBJS_SERVER)
 $(TARGET_USER) : $(OBJS_USER)
 	$(CC) $(CFLAGS) -o $(TARGET_USER) $(OBJS_USER)
 
+	touch slog.txt
+	touch ulog.txt
+
 ifdef DEV_INFO
 DEV_FLAGS = -save-temps
 endif

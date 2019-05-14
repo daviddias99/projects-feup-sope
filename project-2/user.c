@@ -13,7 +13,6 @@ int main(int argc, char* argv[]){
     tlv_request_t request;
     tlv_reply_t reply;
 
-
     formatRequest(&request, argv[1], argv[2], argv[3], argv[4], argv[5]);
 
     if(setupResponseFIFO() == 1)

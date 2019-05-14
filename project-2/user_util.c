@@ -7,7 +7,6 @@ char response_filename[USER_FIFO_PATH_LEN];
 void alarm_handler(int signo){
 
     UNUSED(signo);
-    printf("Response took too long!\n");
     closeComunication();
 
     raise(SIGKILL); // Ends the program
@@ -31,11 +30,18 @@ int setupResponseFIFO(){
     
     sprintf(fifo_name, "%s%05d", USER_FIFO_PATH_PREFIX, pid);
     memcpy(response_filename, fifo_name, USER_FIFO_PATH_LEN);
-
     mkfifo(fifo_name, RESPONSE_FIFO_PERM);
 
-    if((response_fifo_fd = open(fifo_name, O_RDONLY | O_NONBLOCK)) == -1)
+    if((response_fifo_fd = open(fifo_name, O_RDWR | O_NONBLOCK)) == -1){
+
         return 1;
+    }
+        
+
+    int flags = fcntl(response_fifo_fd,F_GETFL,0);
+
+    flags &= ~O_NONBLOCK;
+    fcntl(response_fifo_fd,F_SETFL,flags);
 
     return 0;
 }
@@ -68,6 +74,7 @@ int recordOperation(tlv_request_t* request, tlv_reply_t* reply){
     // TODO: Implement synchronization?
     logRequest(fd, pid, request); // Is the second argument the process PID??
     logReply(fd, pid, reply);
+
 
     return 0;
 }
@@ -270,16 +277,9 @@ int formatCreateAccount(req_value_t* request_value, char* arguments){
     req_create_account_t create_account;
 
     
-
-    
-
     char* accountID = strtok(arguments, " ");
     char* balance = strtok(NULL, " ");
     char* password = strtok(NULL, " ");
-
-    
-
-    print_dbg("--%s | %s | %s | %s \n",arguments,accountID,balance,password);
 
     create_account.account_id = atoi(accountID);
     create_account.balance = atoi(balance);
@@ -389,9 +389,7 @@ int waitResponse(tlv_request_t* request, tlv_reply_t* reply){
 
     alarm(FIFO_TIMEOUT_SECS);
 
-    read(response_fifo_fd, reply, sizeof(reply)); // Not sure if size is in the correct way to do it
-    printf("gotcha %d\n", reply->value.header.ret_code);
-    
+    read(response_fifo_fd, reply, sizeof(tlv_reply_t)); // Not sure if size is in the correct way to do it
 
     alarm(CANCEL_ALARM);
 

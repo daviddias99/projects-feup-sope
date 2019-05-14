@@ -101,8 +101,6 @@ bank_account_t findBankAccount(uint32_t id)
     {
 
         bank_account_t currentAccount = accounts.array[i];
-        print_dbg("current account id %d\n", currentAccount.account_id);
-
 
         if (currentAccount.account_id == id){
 
@@ -243,7 +241,6 @@ void *bank_office_func_stub(void *stub)
 int checkRequestHeader(req_header_t header)
 {
 
-    print_dbg("account id %d\n", header.account_id);
     bank_account_t account = findBankAccount(header.account_id);
 
     if (account.account_id == ERROR_ACCOUNT_ID)
@@ -323,8 +320,6 @@ int op_checkBalance(req_value_t request_value, tlv_reply_t *reply)
     reply->value.header.account_id = request_value.header.account_id;
     reply->value.header.ret_code = RC_OK;
     reply->value.balance.balance = account.balance;
-
-    print_dbg("balance %d\n", reply->value.balance.balance);
 
     return 0;
 }
@@ -416,9 +411,6 @@ int handleRequest(tlv_request_t request)
     reply.value.header.account_id = request.value.header.account_id;
 
     int headerCheckStatus = checkRequestHeader(header);
-/*
-    print_dbg("pthread_self %ld\n", pthread_self());*/
-    print_dbg("header status 1: %d\n", headerCheckStatus);
 
     if (headerCheckStatus != 0)
     {
@@ -431,14 +423,12 @@ int handleRequest(tlv_request_t request)
     }
     else
     {
-        int ret;
 
         switch (type)
         {
         case OP_CREATE_ACCOUNT:
 
-            ret = op_createAccount(request.value, &reply);
-            print_dbg("ret create account %d\n", ret);
+            op_createAccount(request.value, &reply);
 
             break;
 
@@ -463,23 +453,32 @@ int handleRequest(tlv_request_t request)
         }
     }
 
-    print_dbg("header status 2: %d\n", headerCheckStatus);
 
-
+    int fd = open(SERVER_LOGFILE, O_WRONLY | O_APPEND);
+    logReply(fd,7,&reply);
     // send reply
+
+    sendReply(request,reply);    
+
+    return 0;
+}
+
+
+int sendReply(tlv_request_t request, tlv_reply_t reply){
 
     char user_id[WIDTH_ID+1];
     char reply_fifo_name[USER_FIFO_PATH_LEN] = USER_FIFO_PATH_PREFIX;
     sprintf(user_id,"%05d", request.value.header.pid);
     strcat(reply_fifo_name,user_id);
 
-    int reply_fifo_fd = open(reply_fifo_name,O_WRONLY | O_NONBLOCK);
+    int reply_fifo_fd = open(reply_fifo_name,O_WRONLY);
 
-    if(reply_fifo_fd == ENXIO)
+    if(reply_fifo_fd == -1){
+
         return -1;
-
+    }
+        
     write(reply_fifo_fd,&reply,sizeof(tlv_reply_t));
-
     close(reply_fifo_fd);
 
     return 0;

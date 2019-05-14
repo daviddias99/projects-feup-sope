@@ -15,6 +15,7 @@
 #include "sys/stat.h"
 #include "fcntl.h"
 #include "debug.h"
+#include "sope.h"
 
 #define READ 0
 #define WRITE 1
@@ -61,6 +62,7 @@ int generateSHA256sum(char* str, char* result);
 int waitForRequests();
 int setupRequestFIFO();
 int initSyncMechanisms(size_t thread_cnt);
+int sendReply(tlv_request_t request, tlv_reply_t reply);
 
 int handleRequest(tlv_request_t request);
 int checkRequestHeader(req_header_t header);
