@@ -156,7 +156,7 @@ bool validOperation(char* operation){
 
 bool validArguments(char* arguments){
 
-    memcpy(command.arguments, arguments, strlen(arguments) + 1);
+    command.arguments = arguments;
 
     switch(command.operation){
         case 0:
