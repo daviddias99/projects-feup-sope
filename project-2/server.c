@@ -1,5 +1,7 @@
 
 #include "server_util.h"
+#include "server_acc_managing.h"
+#include "server_dispatcher.h"
 
 
 int main(int argc, char* argv[]){
@@ -22,7 +24,7 @@ int main(int argc, char* argv[]){
         exit(-2);
     }
 
-    openLogFile();
+    openLogfile();
 
     bank_account_t adminAccount = createAdminBankAccount(adminPassword);
 

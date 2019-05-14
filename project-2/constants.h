@@ -32,3 +32,13 @@
 #define USER_FIFO_PATH_LEN (sizeof(USER_FIFO_PATH_PREFIX) + WIDTH_ID + 1)
 
 #define FIFO_TIMEOUT_SECS 30
+
+// -----------
+
+#define READ 0
+#define WRITE 1
+#define SHA256_SIZE                   64
+#define REQUEST_FIFO_PERM             0660
+#define ERROR_ACCOUNT_LIMIT_EXCEEDED  -2
+#define ERROR_ACCOUNT_ID              (MAX_BANK_ACCOUNTS +1)
+
