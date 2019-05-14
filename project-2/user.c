@@ -3,7 +3,7 @@
 int main(int argc, char* argv[]){
 
     if(argc != 6){
-        fprintf(stderr, "Usage: %s <account_ID> <account_password><operation_delay><operation_number><arguments>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <account_ID><account_password><operation_delay><operation_number><arguments>\n", argv[0]);
         exit(-1);
     }
 

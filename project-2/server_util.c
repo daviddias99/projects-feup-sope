@@ -4,11 +4,13 @@
 bank_account_array_t accounts;
 int request_fifo_fd;
 int request_fifo_fd_DUMMY;
+int log_file_fd;
 
 sem_t empty;
 sem_t full;
 pthread_mutex_t request_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t account_array_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t log_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 bank_office_t offices[MAX_BANK_OFFICES];
 
 bool passwordIsValid(char *password)
@@ -101,8 +103,6 @@ bank_account_t findBankAccount(uint32_t id)
     {
 
         bank_account_t currentAccount = accounts.array[i];
-        print_dbg("current account id %d\n", currentAccount.account_id);
-
 
         if (currentAccount.account_id == id){
 
@@ -175,6 +175,10 @@ int insertBankAccount(bank_account_t newAccount)
     }
         
     accounts.array[accounts.next_account_index++] = newAccount;
+
+    pthread_mutex_lock(&log_file_mutex);
+    logAccountCreation(log_file_fd,pthread_self(),&accounts.array[accounts.next_account_index-1]);
+    pthread_mutex_unlock(&log_file_mutex);
     
     pthread_mutex_unlock(&account_array_mutex);
 
@@ -212,6 +216,10 @@ int createBankOffices(unsigned int quantity)
 
         pthread_create(&offices[i].tid, NULL, bank_office_func_stub, NULL);
         offices[i].id = i;
+
+        pthread_mutex_lock(&log_file_mutex);
+        logBankOfficeOpen(log_file_fd,i,offices[i].tid);
+        pthread_mutex_unlock(&log_file_mutex);
     }
 
     return 0;
@@ -219,21 +227,22 @@ int createBankOffices(unsigned int quantity)
 
 void *bank_office_func_stub(void *stub)
 {
-    //int semval = 0;
 
     while (true)
     {   
-      /*  sem_getvalue(&full, &semval);
-        print_dbg("%ld before wait full %d\n", pthread_self(), semval);*/
+
         sem_wait(&full); 
         pthread_mutex_lock(&request_queue_mutex);
 
         tlv_request_t currentRequest = queue_pop(&requests);
 
+        pthread_mutex_lock(&log_file_mutex);
+        logRequest(log_file_fd,pthread_self(),&currentRequest);
+        pthread_mutex_unlock(&log_file_mutex);
+
         pthread_mutex_unlock(&request_queue_mutex);
         sem_post(&empty);
-       /* sem_getvalue(&empty, &semval);
-        print_dbg("%ld after post empty %d\n", pthread_self(), semval);*/
+
         handleRequest(currentRequest);
     }
 
@@ -243,7 +252,6 @@ void *bank_office_func_stub(void *stub)
 int checkRequestHeader(req_header_t header)
 {
 
-    print_dbg("account id %d\n", header.account_id);
     bank_account_t account = findBankAccount(header.account_id);
 
     if (account.account_id == ERROR_ACCOUNT_ID)
@@ -323,8 +331,6 @@ int op_checkBalance(req_value_t request_value, tlv_reply_t *reply)
     reply->value.header.account_id = request_value.header.account_id;
     reply->value.header.ret_code = RC_OK;
     reply->value.balance.balance = account.balance;
-
-    print_dbg("balance %d\n", reply->value.balance.balance);
 
     return 0;
 }
@@ -416,9 +422,6 @@ int handleRequest(tlv_request_t request)
     reply.value.header.account_id = request.value.header.account_id;
 
     int headerCheckStatus = checkRequestHeader(header);
-/*
-    print_dbg("pthread_self %ld\n", pthread_self());*/
-    print_dbg("header status 1: %d\n", headerCheckStatus);
 
     if (headerCheckStatus != 0)
     {
@@ -431,14 +434,12 @@ int handleRequest(tlv_request_t request)
     }
     else
     {
-        int ret;
 
         switch (type)
         {
         case OP_CREATE_ACCOUNT:
 
-            ret = op_createAccount(request.value, &reply);
-            print_dbg("ret create account %d\n", ret);
+            op_createAccount(request.value, &reply);
 
             break;
 
@@ -463,23 +464,31 @@ int handleRequest(tlv_request_t request)
         }
     }
 
-    print_dbg("header status 2: %d\n", headerCheckStatus);
+    sendReply(request,reply);    
+
+    return 0;
+}
 
 
-    // send reply
+int sendReply(tlv_request_t request, tlv_reply_t reply){
 
     char user_id[WIDTH_ID+1];
     char reply_fifo_name[USER_FIFO_PATH_LEN] = USER_FIFO_PATH_PREFIX;
     sprintf(user_id,"%05d", request.value.header.pid);
     strcat(reply_fifo_name,user_id);
 
-    int reply_fifo_fd = open(reply_fifo_name,O_WRONLY | O_NONBLOCK);
+    int reply_fifo_fd = open(reply_fifo_name,O_WRONLY);
 
-    if(reply_fifo_fd == ENXIO)
+    if(reply_fifo_fd == -1){
+
         return -1;
+    }
+    
+    pthread_mutex_lock(&log_file_mutex);
+    logReply(log_file_fd,pthread_self(),&reply);
+    pthread_mutex_unlock(&log_file_mutex);
 
     write(reply_fifo_fd,&reply,sizeof(tlv_reply_t));
-
     close(reply_fifo_fd);
 
     return 0;
@@ -489,7 +498,6 @@ int setupRequestFIFO()
 {
     mkfifo(SERVER_FIFO_PATH, REQUEST_FIFO_PERM);
     request_fifo_fd = open(SERVER_FIFO_PATH, O_RDONLY);
-
     request_fifo_fd_DUMMY = open(SERVER_FIFO_PATH, O_WRONLY);   
 
     return 0;
@@ -499,14 +507,14 @@ int waitForRequests()
 {
     while (true)
     {
-       // int semval = 0;
-
         tlv_request_t received_request;
+
         read(request_fifo_fd, &received_request, sizeof(tlv_request_t));
-/*
-        print_dbg("--- %s \n",received_request.value.header.password);
-        sem_getvalue(&empty, &semval);
-        print_dbg("%ld before wait empty %d\n", pthread_self(), semval);*/
+        
+        pthread_mutex_lock(&log_file_mutex);
+        logRequest(log_file_fd,pthread_self(),&received_request);
+        pthread_mutex_unlock(&log_file_mutex);
+
         sem_wait(&empty);
         pthread_mutex_lock(&request_queue_mutex);
 
@@ -514,9 +522,7 @@ int waitForRequests()
 
         pthread_mutex_unlock(&request_queue_mutex);
         sem_post(&full);
-       /* sem_getvalue(&full, &semval);
-        
-        print_dbg("%ld after post full %d\n", pthread_self(), semval);*/
+
     }
 
     return 0;
@@ -527,6 +533,15 @@ int initSyncMechanisms(size_t thread_cnt)
 
     sem_init(&empty, 0, thread_cnt);
     sem_init(&full, 0, 0);
+
+    return 0;
+}
+
+
+int openLogFile(){
+
+
+    log_file_fd = open(SERVER_LOGFILE,O_WRONLY | O_APPEND,0660);
 
     return 0;
 }

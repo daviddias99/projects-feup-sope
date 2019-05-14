@@ -22,6 +22,8 @@ int main(int argc, char* argv[]){
         exit(-2);
     }
 
+    openLogFile();
+
     bank_account_t adminAccount = createAdminBankAccount(adminPassword);
 
     memset(argv[2],0,strlen(argv[2])); // don't store the admins password in plain text

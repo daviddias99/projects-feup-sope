@@ -15,6 +15,7 @@
 #include "sys/stat.h"
 #include "fcntl.h"
 #include "debug.h"
+#include "sope.h"
 
 #define READ 0
 #define WRITE 1
@@ -46,6 +47,8 @@ bank_account_t findBankAccount(uint32_t id);
 
 bank_account_t errorAccount();
 
+int openLogFile();
+
 int createBankOffices(unsigned int quantity);
 void *bank_office_func_stub(void *stub);
 
@@ -61,6 +64,7 @@ int generateSHA256sum(char* str, char* result);
 int waitForRequests();
 int setupRequestFIFO();
 int initSyncMechanisms(size_t thread_cnt);
+int sendReply(tlv_request_t request, tlv_reply_t reply);
 
 int handleRequest(tlv_request_t request);
 int checkRequestHeader(req_header_t header);
