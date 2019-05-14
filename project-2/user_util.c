@@ -34,12 +34,12 @@ int setupResponseFIFO(){
     
     
     if(mkfifo(fifo_name, RESPONSE_FIFO_PERM) == -1){
-        perror("Failed to create response FIFO.");
+        perror("Response FIFO");
         return 1;
     }
 
     if((response_fifo_fd = open(fifo_name, O_RDWR | O_NONBLOCK)) == -1){
-        perror("Failed to open response FIFO.");        
+        perror("Response FIFO");        
         return 2;
     }
         
@@ -54,7 +54,7 @@ int setupResponseFIFO(){
 
 int closeRequestFIFO(){
     if(close(request_fifo_fd) == -1){
-        perror("Failed to close request FIFO.");
+        perror("Request FIFO");
         return 1;
     }
 
@@ -63,7 +63,7 @@ int closeRequestFIFO(){
 
 int closeResponseFIFO(){
     if(close(response_fifo_fd) == -1){
-        perror("Failed to close responde FIFO.");
+        perror("Response FIFO");
         return 1;
     }
 
@@ -76,7 +76,7 @@ int closeComunication(){ // change name?
     closeResponseFIFO();
     
     if(unlink(response_filename) == -1){
-        perror("Failed to unlink responde FIFO.");
+        perror("Response FIFO.");
         return 1;
     }
 
@@ -88,7 +88,7 @@ int recordOperation(tlv_request_t* request, tlv_reply_t* reply){
     int pid = getpid();
 
     if((fd = open(USER_LOGFILE, O_WRONLY | O_APPEND)) == -1){
-        perror("Failed to open User Logfile.");
+        perror("User Logfile.");
         return 1;
     }
 
@@ -429,7 +429,7 @@ int waitResponse(tlv_request_t* request, tlv_reply_t* reply){
     action.sa_flags = 0;
 
     if (sigaction(SIGALRM,&action,NULL) < 0){
-        perror("Alarm handler setup failed!");
+        perror("Alarm Handler");
         return 1;
     }
 

@@ -129,11 +129,18 @@ bank_account_t errorAccount(){
 
 int generateSHA256sum(char *str, char *result)
 {
-
     int fd1[2];
     int fd2[2];
-    pipe(fd1);
-    pipe(fd2);
+    
+    if(pipe(fd1) < 0){
+        perror("Pipe 1");
+        return 1;
+    }
+
+    if(pipe(fd2) < 0){
+        perror("Pipe 2");
+        return 2;
+    }
 
     pid_t PID = fork();
 
