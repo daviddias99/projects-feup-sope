@@ -531,7 +531,9 @@ int waitForRequests()
 int initSyncMechanisms(size_t thread_cnt)
 {
 
+    logSyncMechSem(log_file_fd,pthread_self(),SYNC_OP_SEM_INIT,SYNC_ROLE_PRODUCER,offices[MAIN_THREAD_ID].id,thread_cnt);
     sem_init(&empty, 0, thread_cnt);
+    logSyncMechSem(log_file_fd,pthread_self(),SYNC_OP_SEM_INIT,SYNC_ROLE_PRODUCER,offices[MAIN_THREAD_ID].id,0);
     sem_init(&full, 0, 0);
 
     return 0;

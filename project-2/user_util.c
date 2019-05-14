@@ -356,7 +356,6 @@ int formatRequest(tlv_request_t* request, char* accountID, char* password, char*
     
     formatValue(&request_value, accountID, password, delay, operation, arguments);
 
-    
 
     int op_type = atoi(operation);
 
@@ -397,3 +396,4 @@ int waitResponse(tlv_request_t* request, tlv_reply_t* reply){
 
     return 0;
 }
+
