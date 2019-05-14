@@ -124,11 +124,18 @@ bank_account_t errorAccount(){
 
 int generateSHA256sum(char *str, char *result)
 {
-
     int fd1[2];
     int fd2[2];
-    pipe(fd1);
-    pipe(fd2);
+    
+    if(pipe(fd1) < 0){
+        perror("Pipe 1");
+        return 1;
+    }
+
+    if(pipe(fd2) < 0){
+        perror("Pipe 2");
+        return 2;
+    }
 
     pid_t PID = fork();
 
@@ -268,6 +275,7 @@ bool passwordIsCorrect(bank_account_t account, char *pwd)
 
 int op_createAccount(req_value_t request_value, tlv_reply_t *reply)
 {
+    print_location();
 
     req_header_t header = request_value.header;
 
@@ -281,7 +289,12 @@ int op_createAccount(req_value_t request_value, tlv_reply_t *reply)
         return -1;
     }
 
+    print_location();
+
     bank_account_t newAccount = createBankAccount(request_value.create.account_id, request_value.create.password, request_value.create.balance);
+
+
+    print_location();
 
     if (insertBankAccount(newAccount) == ERROR_ACCOUNT_LIMIT_EXCEEDED)
     {
@@ -293,6 +306,8 @@ int op_createAccount(req_value_t request_value, tlv_reply_t *reply)
 
     reply->value.header.account_id = request_value.header.account_id;
     reply->value.header.ret_code = RC_OK;
+
+    print_location();
 
     return 0;
 }
@@ -401,11 +416,16 @@ int handleRequest(tlv_request_t request)
 
     int headerCheckStatus = checkRequestHeader(header);
 
+    print_location();
+
     if (headerCheckStatus != 0)
     {
-
-        if (headerCheckStatus == -1)
+        
+        print_location();
+        if (headerCheckStatus == -1) {
             reply.value.header.ret_code = RC_ID_NOT_FOUND;
+            print_location();
+        }
 
         if (headerCheckStatus == -2)
             reply.value.header.ret_code = RC_LOGIN_FAIL;
@@ -416,6 +436,8 @@ int handleRequest(tlv_request_t request)
         switch (type)
         {
         case OP_CREATE_ACCOUNT:
+
+            print_location();
 
             op_createAccount(request.value, &reply);
 
