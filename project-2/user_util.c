@@ -19,8 +19,7 @@ void alarm_handler(int signo){
 int setupRequestFIFO(){
     if((request_fifo_fd= open(SERVER_FIFO_PATH, O_WRONLY)) == -1){
         recordError(SRV_DOWN);
-
-        return -1;
+        return 1;
     }
 
     return 0;
@@ -32,11 +31,16 @@ int setupResponseFIFO(){
     
     sprintf(fifo_name, "%s%05d", USER_FIFO_PATH_PREFIX, pid);
     memcpy(response_filename, fifo_name, USER_FIFO_PATH_LEN);
-    mkfifo(fifo_name, RESPONSE_FIFO_PERM);
+    
+    
+    if(mkfifo(fifo_name, RESPONSE_FIFO_PERM) == -1){
+        perror("Failed to create response FIFO.");
+        return 1;
+    }
 
     if((response_fifo_fd = open(fifo_name, O_RDWR | O_NONBLOCK)) == -1){
-
-        return 1;
+        perror("Failed to open response FIFO.");        
+        return 2;
     }
         
 
@@ -50,7 +54,7 @@ int setupResponseFIFO(){
 
 int closeRequestFIFO(){
     if(close(request_fifo_fd) == -1){
-        perror("Couldn't close Request FIFO");
+        perror("Failed to close request FIFO.");
         return 1;
     }
 
@@ -59,7 +63,7 @@ int closeRequestFIFO(){
 
 int closeResponseFIFO(){
     if(close(response_fifo_fd) == -1){
-        perror("Couldn't close Response FIFO");
+        perror("Failed to close responde FIFO.");
         return 1;
     }
 
@@ -71,7 +75,10 @@ int closeComunication(){ // change name?
     closeRequestFIFO();
     closeResponseFIFO();
     
-    unlink(response_filename);
+    if(unlink(response_filename) == -1){
+        perror("Failed to unlink responde FIFO.");
+        return 1;
+    }
 
     return 0;
 }
@@ -89,72 +96,71 @@ int recordOperation(tlv_request_t* request, tlv_reply_t* reply){
     logRequest(fd, pid, request); // Is the second argument the process PID??
     logReply(fd, pid, reply);
 
-
     return 0;
 }
 
-bool validAccount(char* accountID){
+int validAccount(char* accountID){
     int ID = atoi(accountID);
 
     command.accountID = ID;
 
     if(ID < 0)
-        return false;
+        return NEG_ACCOUNT_ID;
 
     if(ID > MAX_BANK_ACCOUNTS)
-        return false;
+        return LRG_ACCOUNT_ID;
 
-    return true;
+    return OK;
 }
 
-bool validPassword(char* password){
+int validPassword(char* password){
     size_t password_length = strlen(password);
 
     if(password_length < MIN_PASSWORD_LEN)
-        return false;
+        return SRT_PASSWORD;
 
     if(password_length > MAX_PASSWORD_LEN)
-        return false;
+        return LNG_PASSWORD;
 
     char* token = strtok(password, " ");
 
     if(strlen(token) != password_length) // Checks if there are no blanck spaces (not sure it works yet)
-        return false;
+        return BAD_PASSWORD;
 
     memcpy(command.password, password, MAX_PASSWORD_LEN + 1);
 
-    return true;
+    return OK;
 }
 
-bool validDelay(char* delay){
+int validDelay(char* delay){
     int op_delay = atoi(delay);
 
     if(op_delay < 0)
-        return false;
+        return NEG_DELAY;
 
     if(op_delay > MAX_OP_DELAY_MS)
-        return false;
+        return LNG_DELAY;
 
     command.delay = op_delay;
 
-    return true;
+    return OK;
 }
 
-bool validOperation(char* operation){
+int validOperation(char* operation){
     int op_number = atoi(operation);
 
     if(op_number < 0)
-        return false;
+        return INV_OPERATION;
 
     if(op_number > 3)
-        return false;
+        return INV_OPERATION;
 
     command.operation = op_number;
 
-    return true;
+    return OK;
 }
 
-bool validArguments(char* arguments){
+int validArguments(char* arguments){
 
     memcpy(command.arguments, arguments, strlen(arguments) + 1);
 
@@ -168,11 +174,11 @@ bool validArguments(char* arguments){
         case 3:
             return validShutdownOperation(arguments);
         default:
-            return false;
+            return OK;
     }
 }
 
-bool validCreationOperation(char* arguments){
+int validCreationOperation(char* arguments){
     
     char* temp_Args = (char*) malloc(sizeof(char) * strlen(arguments) + 1);
 
@@ -180,96 +186,97 @@ bool validCreationOperation(char* arguments){
 
     char* newAccountID = strtok(temp_Args, " ");
 
-    if(!validAccount(newAccountID))
-        return false;
+    if(validAccount(newAccountID) != OK)
+        return INV_NEW_ACCOUNT_ID;
 
     char* token = strtok(NULL, " ");
 
     long unsigned int balance = atoi(token);
 
     if(balance < 1)
-        return false;
+        return SRT_BALANCE;
 
     if(balance > MAX_BALANCE)
-        return false;
+        return LRG_BALANCE;
 
     char* password = strtok(NULL, " ");
 
-    if(!validPassword(password))
-        return false;
+    if(validPassword(password) != OK)
+        return INV_NEW_PASSWORD;
 
     token = strtok(NULL, " ");
 
     if(token != NULL)
-        return false;
+        return INV_OP_ARGUMENTS;
 
-    return true;
+    return OK;
 }
 
-bool validBalanceOperation(char* arguments){
+int validBalanceOperation(char* arguments){
     if(strlen(arguments) != 0)
-        return false;
+        return INV_OP_ARGUMENTS;
     
-    return true;
+    return OK;
 }
 
-bool validTransferOperation(char* arguments){
+int validTransferOperation(char* arguments){
     char* temp_Args = (char*) malloc(sizeof(char) * strlen(arguments) + 1);
 
     memcpy(temp_Args,arguments,strlen(arguments)+1);
 
     char* recipientID = strtok(temp_Args, " ");
 
-    if(!validAccount(recipientID))
-        return false;
+    if(validAccount(recipientID) != OK)
+        return INV_TRS_ACCOUNT;
 
     char* token = strtok(NULL, " ");
 
     if(strlen(token) == 0)
-        return false;
+        return INV_OP_ARGUMENTS;
 
     long unsigned int amount = atoi(token);
 
     if(amount < 1)
-        return false;
+        return SML_TRSF_AMOUNT;
 
     if(amount > MAX_BALANCE)
-        return false;
+        return LRG_TRSF_AMOUNT;
 
     token = strtok(NULL, " ");
 
     if(token != NULL)
-        return false;
-  
+        return INV_OP_ARGUMENTS;
     
-    return true;
+    return OK;
 }
 
-bool validShutdownOperation(char* arguments){
+int validShutdownOperation(char* arguments){
     if(strlen(arguments) != 0)
-            return false;
+            return INV_OP_ARGUMENTS;
         
     return true;
 }
 
 int checkArguments(char* accountID, char* password, char* delay, char* operation, char* arguments){
 
-    if(!validAccount(accountID))
-        return -1;
+    int code;
 
-    if(!validPassword(password))
-        return -1;
+    if((code = validAccount(accountID)) != OK)
+        return code;
 
-    if(!validDelay(delay))
-        return -1;
+    if((code = validPassword(password)) != OK)
+        return code;
 
-    if(!validOperation(operation))
-        return -1;
+    if((code = validDelay(delay)) != OK)
+        return code;
 
-    if(!validArguments(arguments))
-        return -1;
+    if((code = validOperation(operation)) != OK)
+        return code;
 
-    return 0;
+    if((code = validArguments(arguments)) != OK)
+        return code;
+
+    return OK;
 }
 
 int formatCreateAccount(req_value_t* request_value){
@@ -428,7 +435,8 @@ int waitResponse(tlv_request_t* request, tlv_reply_t* reply){
 
     alarm(CANCEL_ALARM);
 
-    closeComunication();
+    if(closeComunication() != 0)
+        return 1;
 
     return 0;
 }

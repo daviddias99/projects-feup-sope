@@ -31,15 +31,44 @@
 #define OK                  0
 #define SRV_DOWN            1
 #define SRV_TIMEOUT         2
-#define USR_DOWN            3
-#define LOGIN_FAIL          4
-#define OP_NALLOW           5
-#define ID_IN_USE           6
-#define ID_NOT_FOUND        7
-#define SAME_ID             8
-#define NO_FUNDS            9
-#define TOO_HIGH            10
-#define OTHER               11
+
+#define NEG_ACCOUNT_ID      1
+#define LRG_ACCOUNT_ID      2
+#define SRT_PASSWORD        3
+#define LNG_PASSWORD        4
+#define BAD_PASSWORD        5
+#define NEG_DELAY           6
+#define LNG_DELAY           7
+#define INV_OPERATION       8
+#define INV_NEW_ACCOUNT_ID  9
+#define SRT_BALANCE         10
+#define LRG_BALANCE         11
+#define INV_NEW_PASSWORD    12
+#define INV_TRS_ACCOUNT     13
+#define SML_TRSF_AMOUNT     14
+#define LRG_TRSF_AMOUNT     15
+#define INV_OP_ARGUMENTS    16
+
+
+static const char* ERROR_MESSAGES[] = {
+    [OK] = "Operation successful",
+    [NEG_ACCOUNT_ID] = "Account ID can't be negative.",
+    [LRG_ACCOUNT_ID] = "Account ID too large.",
+    [SRT_PASSWORD] = "Password was too short.",
+    [LNG_PASSWORD] = "Password was too long.",
+    [BAD_PASSWORD] = "Password can't contain blank spaces.",
+    [NEG_DELAY] = "Operation delay can't be negative or zero.",
+    [LNG_DELAY] = "Operation delay was too long.",
+    [INV_OPERATION] = "Choosen operation doesn't exist.",
+    [INV_NEW_ACCOUNT_ID] = "New account ID is not accepted.",
+    [SRT_BALANCE] = "New account balance is too small.",
+    [LRG_BALANCE] = "New account balance is too large.",
+    [INV_NEW_PASSWORD] = "New account password is invalid.",
+    [INV_TRS_ACCOUNT] = "Recipient account ID is not accepted.",
+    [SML_TRSF_AMOUNT] = "Transfering amount is too small.",
+    [LRG_TRSF_AMOUNT] = "Transfering amount is too large.",
+    [INV_OP_ARGUMENTS] = "Operation doesn't accept those arguments.",
+};
 
 typedef struct user_command {
     uint32_t accountID;
@@ -63,23 +92,23 @@ int closeComunication();
 
 int recordOperation(tlv_request_t* request, tlv_reply_t* reply);
 
-bool validAccount(char* accountID);
+int validAccount(char* accountID);
 
-bool validPassword(char* password);
+int validPassword(char* password);
 
-bool validDelay(char* delay);
+int validDelay(char* delay);
 
-bool validOperation(char* operation);
+int validOperation(char* operation);
 
-bool validArguments(char* arguments);
+int validArguments(char* arguments);
 
-bool validCreationOperation(char* arguments);
+int validCreationOperation(char* arguments);
 
-bool validBalanceOperation(char* arguments);
+int validBalanceOperation(char* arguments);
 
-bool validTransferOperation(char* arguments);
+int validTransferOperation(char* arguments);
 
-bool validShutdownOperation(char* arguments);
+int validShutdownOperation(char* arguments);
 
 int checkArguments(char* accountID, char* password, char* delay, char* operation, char* arguments);
 
