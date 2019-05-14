@@ -162,7 +162,7 @@ int validOperation(char* operation){
 
 int validArguments(char* arguments){
 
-    memcpy(command.arguments, arguments, strlen(arguments) + 1);
+    command.arguments = arguments;
 
     switch(command.operation){
         case 0:
@@ -440,3 +440,4 @@ int waitResponse(tlv_request_t* request, tlv_reply_t* reply){
 
     return 0;
 }
+
