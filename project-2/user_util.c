@@ -32,7 +32,6 @@ int setupResponseFIFO(){
     sprintf(fifo_name, "%s%05d", USER_FIFO_PATH_PREFIX, pid);
     memcpy(response_filename, fifo_name, USER_FIFO_PATH_LEN);
     
-    
     if(mkfifo(fifo_name, RESPONSE_FIFO_PERM) == -1){
         perror("Response FIFO");
         return 1;
@@ -43,11 +42,19 @@ int setupResponseFIFO(){
         return 2;
     }
         
-
-    int flags = fcntl(response_fifo_fd,F_GETFL,0);
+    int flags;
+    
+    if((flags = fcntl(response_fifo_fd,F_GETFL,0)) == -1){
+        perror("Response FIFO");        
+        return 3;
+    }
 
     flags &= ~O_NONBLOCK;
-    fcntl(response_fifo_fd,F_SETFL,flags);
+
+    if(fcntl(response_fifo_fd,F_SETFL,flags) == -1){
+        perror("Response FIFO");        
+        return 4;
+    }
 
     return 0;
 }
@@ -92,14 +99,21 @@ int recordOperation(tlv_request_t* request, tlv_reply_t* reply){
         return 1;
     }
 
-    // TODO: Implement synchronization?
-    logRequest(fd, pid, request); // Is the second argument the process PID??
-    logReply(fd, pid, reply);
+    if(logRequest(fd, pid, request) < 0){
+        printf("Error: %s\n", ERROR_MESSAGES[LOG_REQUEST_ERROR]);
+        return 2;
+    }
+
+    if(logReply(fd, pid, reply) < 0){
+        printf("Error: %s\n", ERROR_MESSAGES[LOG_REPLY_ERROR]);
+        return 3;
+    }
 
     return 0;
 }
 
 int validAccount(char* accountID){
+
     int ID = atoi(accountID);
 
     command.accountID = ID;
@@ -285,7 +299,7 @@ int checkArguments(char* accountID, char* password, char* delay, char* operation
     return OK;
 }
 
-int formatCreateAccount(req_value_t* request_value){
+int formatReqCreateAccount(req_value_t* request_value){
     req_create_account_t create_account;   
 
     char* arguments = (char*) malloc(sizeof(char) * strlen(command.arguments) + 1);
@@ -306,7 +320,7 @@ int formatCreateAccount(req_value_t* request_value){
     return 0;
 }
 
-int formatTranfer(req_value_t* request_value){
+int formatReqTransfer(req_value_t* request_value){
     req_transfer_t tranfer;
 
     char* arguments = (char*) malloc(sizeof(char) * strlen(command.arguments) + 1);
@@ -345,12 +359,12 @@ int formatReqValue(req_value_t* request_value){
 
     switch(command.operation){
         case 0:
-            formatCreateAccount(request_value);
+            formatReqCreateAccount(request_value);
             break;
         case 1:
             break;
         case 2:
-            formatTranfer(request_value);
+            formatReqTransfer(request_value);
             break;
         case 3:
             break;
@@ -382,6 +396,36 @@ int sendRequest(tlv_request_t* request){
     return 0;
 }
 
+int formatRepBalanceAccount(rep_value_t* reply_value){
+    rep_balance_t reply_balance;
+
+    reply_balance.balance = 0; // ATTENTION: Impossible to know if you are the user?
+
+    reply_value->balance = reply_balance;
+
+    return 0;
+}
+
+int formatRepTransfer(rep_value_t* reply_value){
+    rep_transfer_t reply_transfer;
+
+    reply_transfer.balance = 0; // ATTENTION: Impossible to know if you are the user?
+
+    reply_value->transfer = reply_transfer;
+
+    return 0;
+}
+
+int formatRepShutdownTransfer(rep_value_t* reply_value){
+    rep_shutdown_t reply_shutdown;
+
+    reply_shutdown.active_offices = 0; // ATTENTION: Impossible to know if you are the user?
+
+    reply_value->shutdown = reply_shutdown;
+
+    return 0;
+}
+
 int formatRepHeader(rep_header_t* header, int ret_code){
     header->account_id = command.accountID;
     header->ret_code = ret_code;
@@ -389,12 +433,28 @@ int formatRepHeader(rep_header_t* header, int ret_code){
     return 0;
 }
 
-int formatRepValue(rep_value_t* response_value, int ret_code){
+int formatRepValue(rep_value_t* reply_value, int ret_code){
     rep_header_t header;
 
     formatRepHeader(&header, ret_code);
 
-    response_value->header = header;
+    reply_value->header = header;
+
+    switch(command.operation){
+        case 0:
+            break;
+        case 1:
+            formatRepBalanceAccount(reply_value);
+            break;
+        case 2:
+            formatRepTransfer(reply_value);
+            break;
+        case 3:
+            formatRepShutdownTransfer(reply_value);
+            break;
+        default:
+            break;
+    }
 
     return 0;
 }
@@ -404,6 +464,8 @@ int formatReply(tlv_reply_t* reply, int ret_code){
 
     formatRepValue(&value, ret_code);
 
+    reply->type = command.operation;
+    reply->length = sizeof(tlv_reply_t);
     reply->value = value;
 
     return 0;

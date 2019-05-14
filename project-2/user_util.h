@@ -48,7 +48,8 @@
 #define SML_TRSF_AMOUNT     14
 #define LRG_TRSF_AMOUNT     15
 #define INV_OP_ARGUMENTS    16
-
+#define LOG_REQUEST_ERROR   17
+#define LOG_REPLY_ERROR     18
 
 static const char* ERROR_MESSAGES[] = {
     [OK] = "Operation successful",
@@ -68,6 +69,8 @@ static const char* ERROR_MESSAGES[] = {
     [SML_TRSF_AMOUNT] = "Transfering amount is too small.",
     [LRG_TRSF_AMOUNT] = "Transfering amount is too large.",
     [INV_OP_ARGUMENTS] = "Operation doesn't accept those arguments.",
+    [LOG_REQUEST_ERROR] = "Failed to record request on user log file.",
+    [LOG_REPLY_ERROR] = "Failed to record reply on user log file.",
 };
 
 typedef struct user_command {
@@ -112,9 +115,9 @@ int validShutdownOperation(char* arguments);
 
 int checkArguments(char* accountID, char* password, char* delay, char* operation, char* arguments);
 
-int formatCreateAccount(req_value_t* request_value);
+int formatReqCreateAccount(req_value_t* request_value);
 
-int formatTranfer(req_value_t* request_value);
+int formatReqTransfer(req_value_t* request_value);
 
 int formatReqHeader(req_header_t* header);
 
@@ -124,9 +127,15 @@ int formatRequest(tlv_request_t* request);
 
 int sendRequest(tlv_request_t* request);
 
+int formatRepBalanceAccount(rep_value_t* reply_value);
+
+int formatRepTransfer(rep_value_t* reply_value);
+
+int formatRepShutdownTransfer(rep_value_t* reply_value);
+
 int formatRepHeader(rep_header_t* header, int ret_code);
 
-int formatRepValue(rep_value_t* request_value, int ret_code);
+int formatRepValue(rep_value_t* reply_value, int ret_code);
 
 int formatReply(tlv_reply_t* reply, int ret_code);
 
