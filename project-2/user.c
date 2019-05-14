@@ -10,7 +10,7 @@ int main(int argc, char* argv[]){
     int code;
 
     if((code = checkArguments(argv[1], argv[2], argv[3], argv[4], argv[5])) != OK){
-        printf("Error: %s", ERROR_MESSAGES[code]);
+        printf("Error: %s\n", ERROR_MESSAGES[code]);
         exit(code);
     }
 

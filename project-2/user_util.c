@@ -184,6 +184,9 @@ int validCreationOperation(char* arguments){
 
     memcpy(temp_Args,arguments,strlen(arguments)+1);
 
+    if(strlen(temp_Args) == 0)
+        return INV_OP_ARGUMENTS;
+
     char* newAccountID = strtok(temp_Args, " ");
 
     if(validAccount(newAccountID) != OK)
@@ -223,6 +226,9 @@ int validTransferOperation(char* arguments){
     char* temp_Args = (char*) malloc(sizeof(char) * strlen(arguments) + 1);
 
     memcpy(temp_Args,arguments,strlen(arguments)+1);
+
+    if(strlen(temp_Args) == 0)
+        return INV_OP_ARGUMENTS;
 
     char* recipientID = strtok(temp_Args, " ");
 
