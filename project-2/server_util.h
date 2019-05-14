@@ -25,12 +25,6 @@
 #define ERROR_ACCOUNT_ID              (MAX_BANK_ACCOUNTS +1)
 
 
-typedef struct bank_account_array{
-
-    bank_account_t array[MAX_BANK_ACCOUNTS];
-    size_t next_account_index;
-
-} bank_account_array_t;
 
 typedef struct bank_office{         // TODO: mudar nome
 
@@ -46,6 +40,7 @@ bank_account_t createAdminBankAccount(char* password);
 bank_account_t findBankAccount(uint32_t id);
 
 bank_account_t errorAccount();
+int initAccounts();
 
 int openLogFile();
 

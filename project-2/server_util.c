@@ -1,7 +1,8 @@
 #include "server_util.h"
 #include <semaphore.h>
 
-bank_account_array_t accounts;
+bank_account_t accounts[MAX_BANK_ACCOUNTS];
+pthread_mutex_t account_mutex[MAX_BANK_ACCOUNTS];
 int request_fifo_fd;
 int request_fifo_fd_DUMMY;
 int log_file_fd;
@@ -96,26 +97,20 @@ bank_account_t createBankAccount(uint32_t id, char *password, uint32_t balance)
 
 bank_account_t findBankAccount(uint32_t id)
 {
+    return accounts[id];
+}
 
-    pthread_mutex_lock(&account_array_mutex);
 
-    for (unsigned int i = 0; i < accounts.next_account_index; i++)
-    {
+int initAccounts(){
 
-        bank_account_t currentAccount = accounts.array[i];
+    for(size_t i = 0; i < MAX_BANK_ACCOUNTS;i++){
 
-        if (currentAccount.account_id == id){
+        pthread_mutex_init(&account_mutex[i],NULL);
+        accounts[i] = errorAccount();
 
-            pthread_mutex_unlock(&account_array_mutex);        
-            return currentAccount;
-        }
-            
     }
 
-    pthread_mutex_unlock(&account_array_mutex);
-
-
-    return errorAccount();
+    return 0;
 }
 
 bank_account_t errorAccount(){
@@ -163,7 +158,7 @@ int insertBankAccount(bank_account_t newAccount)
 {
     pthread_mutex_lock(&account_array_mutex);
 
-    if (accounts.next_account_index == MAX_BANK_ACCOUNTS){
+    if (newAccount.account_id >= MAX_BANK_ACCOUNTS){
 
         pthread_mutex_unlock(&account_array_mutex);
         return -1;
@@ -174,10 +169,10 @@ int insertBankAccount(bank_account_t newAccount)
         return -2;
     }
         
-    accounts.array[accounts.next_account_index++] = newAccount;
+    accounts[newAccount.account_id] = newAccount;
 
     pthread_mutex_lock(&log_file_mutex);
-    logAccountCreation(log_file_fd,pthread_self(),&accounts.array[accounts.next_account_index-1]);
+    logAccountCreation(log_file_fd,pthread_self(),&accounts[newAccount.account_id]);
     pthread_mutex_unlock(&log_file_mutex);
     
     pthread_mutex_unlock(&account_array_mutex);
@@ -187,21 +182,13 @@ int insertBankAccount(bank_account_t newAccount)
 
 bool existsBankAccount(uint32_t id)
 {
-    // pthread_mutex_lock(&account_array_mutex);
 
-    for (unsigned int i = 0; i < accounts.next_account_index; i++)
-    {
+    if(id >= MAX_BANK_ACCOUNTS)
+        return false;
 
-        if (accounts.array[i].account_id == id){
-
-            pthread_mutex_unlock(&account_array_mutex);
-            return true;
-        }
-            
-    }
-
-    // pthread_mutex_unlock(&account_array_mutex);
-
+    if (accounts[id].account_id != ERROR_ACCOUNT_ID)
+        return true;
+        
     return false;
 }
 
@@ -358,34 +345,20 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply)
         return -2;
     }
 
-    pthread_mutex_lock(&account_array_mutex);
 
-    for (unsigned int i = 0; i < accounts.next_account_index; i++)
-    {
+    if(!existsBankAccount(request_value.transfer.account_id)){
 
-        if (accounts.array[i].account_id == request_value.transfer.account_id){
-
-            dest = &accounts.array[i]; 
-        }
-
-        if (accounts.array[i].account_id == request_value.header.account_id){
-
-            source = &accounts.array[i]; 
-        }
-            
-    }
-
-    if(dest == NULL){
-
-        pthread_mutex_unlock(&account_array_mutex);
         reply->value.header.ret_code = RC_ID_NOT_FOUND;
 
         return -3;
     }
 
+    dest = &accounts[request_value.transfer.account_id];
+    source = &accounts[request_value.header.account_id];
+
+
     if(source->balance < request_value.transfer.amount){
 
-        pthread_mutex_unlock(&account_array_mutex);
         reply->value.header.ret_code = RC_NO_FUNDS;
 
         return -4;
@@ -394,16 +367,21 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply)
         
     if(dest->balance + request_value.transfer.amount > MAX_BALANCE){
 
-        pthread_mutex_unlock(&account_array_mutex);
         reply->value.header.ret_code = RC_TOO_HIGH;
 
         return -5;
     }
 
+    // TODO: REMOVER DEADLOCK
+
+    pthread_mutex_lock(&account_mutex[request_value.transfer.account_id]);
+    pthread_mutex_lock(&account_mutex[request_value.header.account_id]);
+
     dest->balance += request_value.transfer.amount;
     source->balance -= request_value.transfer.amount;
 
-    pthread_mutex_unlock(&account_array_mutex);
+    pthread_mutex_unlock(&account_mutex[request_value.transfer.account_id]);
+    pthread_mutex_unlock(&account_mutex[request_value.header.account_id]);
 
 
     reply->value.header.account_id = request_value.header.account_id;
