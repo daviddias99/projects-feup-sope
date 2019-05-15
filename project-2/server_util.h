@@ -17,13 +17,14 @@
 #include "debug.h"
 #include "sope.h"
 
+/*
 #define READ 0
 #define WRITE 1
 #define SHA256_SIZE                   64
 #define REQUEST_FIFO_PERM             0660
 #define ERROR_ACCOUNT_LIMIT_EXCEEDED  -2
-#define ERROR_ACCOUNT_ID              (MAX_BANK_ACCOUNTS +1)
-
+#define ERROR_ACCOUNT_ID              (MAX_BANK_ACCOUNTS + 1)
+*/
 
 
 typedef struct bank_office{         // TODO: mudar nome
@@ -58,7 +59,6 @@ int generateSHA256sum(char* str, char* result);
 
 int waitForRequests();
 int setupRequestFIFO();
-int initSyncMechanisms(size_t thread_cnt);
 int sendReply(tlv_request_t request, tlv_reply_t reply);
 
 int handleRequest(tlv_request_t request);
@@ -69,5 +69,6 @@ int op_createAccount(req_value_t request_value, tlv_reply_t* reply);
 int op_checkBalance(req_value_t request_value, tlv_reply_t* reply);
 int op_transfer(req_value_t request_value, tlv_reply_t* reply);
 
+int getLogfile();
 
 #endif

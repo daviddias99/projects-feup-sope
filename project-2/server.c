@@ -1,5 +1,6 @@
 
 #include "server_util.h"
+#include "server_sync.h"
 
 
 int main(int argc, char* argv[]){
