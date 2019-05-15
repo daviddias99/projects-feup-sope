@@ -226,13 +226,10 @@ void *bank_office_func_stub(void *stub)
         sem_getvalue(&full,&semValue);
         logSyncMechSem(log_file_fd,pthread_self(),SYNC_OP_SEM_WAIT,SYNC_ROLE_CONSUMER,officeID,semValue);
 
-        print_location();
         sem_wait(&full); 
-        print_location();
-
+    
         pthread_mutex_lock(&request_queue_mutex);
-
-        print_location();
+        
         tlv_request_t currentRequest = queue_pop(&requests);
 
         logRequest(log_file_fd,pthread_self(),&currentRequest);
@@ -255,7 +252,7 @@ int checkRequestHeader(req_header_t header)
         return -1;
 
     if (!passwordIsCorrect(account, header.password)) {
-        print_location();
+        
        return -2;
     }
 
@@ -280,7 +277,7 @@ bool passwordIsCorrect(bank_account_t account, char *pwd)
 
 int op_createAccount(req_value_t request_value, tlv_reply_t *reply)
 {
-    print_location();
+    
 
     req_header_t header = request_value.header;
 
@@ -294,12 +291,12 @@ int op_createAccount(req_value_t request_value, tlv_reply_t *reply)
         return -1;
     }
 
-    print_location();
+    
 
     bank_account_t newAccount = createBankAccount(request_value.create.account_id, request_value.create.password, request_value.create.balance);
 
 
-    print_location();
+    
 
     if (insertBankAccount(newAccount) == ERROR_ACCOUNT_LIMIT_EXCEEDED)
     {
@@ -312,7 +309,7 @@ int op_createAccount(req_value_t request_value, tlv_reply_t *reply)
     reply->value.header.account_id = request_value.header.account_id;
     reply->value.header.ret_code = RC_OK;
 
-    print_location();
+    
 
     return 0;
 }
@@ -421,15 +418,15 @@ int handleRequest(tlv_request_t request)
 
     int headerCheckStatus = checkRequestHeader(header);
 
-    print_location();
+    
 
     if (headerCheckStatus != 0)
     {
         
-        print_location();
+        
         if (headerCheckStatus == -1) {
             reply.value.header.ret_code = RC_ID_NOT_FOUND;
-            print_location();
+            
         }
 
         if (headerCheckStatus == -2)
@@ -442,7 +439,7 @@ int handleRequest(tlv_request_t request)
         {
         case OP_CREATE_ACCOUNT:
 
-            print_location();
+            
 
             op_createAccount(request.value, &reply);
 
@@ -469,7 +466,7 @@ int handleRequest(tlv_request_t request)
         }
     }
 
-    print_location();
+    
 
     sendReply(request,reply);    
 
@@ -491,11 +488,8 @@ int sendReply(tlv_request_t request, tlv_reply_t reply){
         return -1;
     }
 
-    print_location();
-    
-    print_location();
     logReply(log_file_fd,pthread_self(),&reply);
-    print_location();
+    
 
     write(reply_fifo_fd,&reply,sizeof(tlv_reply_t));
     close(reply_fifo_fd);
@@ -514,31 +508,29 @@ int setupRequestFIFO()
 
 int waitForRequests()
 {
+
+    int semValue;
+    tlv_request_t received_request;
+
     while (true)
     {
-        tlv_request_t received_request;
-        print_location();
-        read(request_fifo_fd, &received_request, sizeof(tlv_request_t));
-        print_location();
-        
-        logRequest(log_file_fd,pthread_self(),&received_request);
 
+        read(request_fifo_fd, &received_request, sizeof(tlv_request_t));
+                
+        logRequest(log_file_fd,pthread_self(),&received_request);
+        sem_getvalue(&empty,&semValue);
+        logSyncMechSem(log_file_fd,pthread_self(),SYNC_OP_SEM_WAIT,SYNC_ROLE_PRODUCER,MAIN_THREAD_ID,semValue);
         sem_wait(&empty);
+
         pthread_mutex_lock(&request_queue_mutex);
 
         queue_push(&requests, received_request);
 
         pthread_mutex_unlock(&request_queue_mutex);
-        print_location();
-        int value = 0;
-        sem_getvalue(&full, &value);
-        print_dbg("sem full value %d\n", value);
+        
         sem_post(&full);
-        value = 0;
-        sem_getvalue(&full, &value);
-        print_dbg("sem full value %d\n", value);
-        print_location();
-
+        sem_getvalue(&full, &semValue);
+        logSyncMechSem(log_file_fd,pthread_self(),SYNC_OP_SEM_POST,SYNC_ROLE_PRODUCER,MAIN_THREAD_ID,semValue);
     }
 
     return 0;
