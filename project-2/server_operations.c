@@ -116,6 +116,8 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply)
     dest->balance += request_value.transfer.amount;
     source->balance -= request_value.transfer.amount;
 
+    reply->value.transfer.balance = source->balance;
+
     pthread_mutex_unlock(&account_mutex[request_value.transfer.account_id]);
     pthread_mutex_unlock(&account_mutex[request_value.header.account_id]);
 
