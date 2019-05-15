@@ -23,6 +23,8 @@ int main(int argc, char* argv[]){
     }
 
     openLogFile();
+    initSyncMechanisms((size_t)bankOfficeCount);
+    initAccounts();
 
     bank_account_t adminAccount = createAdminBankAccount(adminPassword);
 
@@ -32,8 +34,6 @@ int main(int argc, char* argv[]){
     insertBankAccount(adminAccount);
 
     createBankOffices(bankOfficeCount);
-
-    initSyncMechanisms((size_t)bankOfficeCount);
 
     setupRequestFIFO();
 

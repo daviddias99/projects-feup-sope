@@ -10,7 +10,7 @@ int log_file_fd;
 sem_t empty;
 sem_t full;
 pthread_mutex_t request_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t account_array_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 pthread_mutex_t log_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 bank_office_t offices[MAX_BANK_OFFICES];
 
@@ -163,26 +163,26 @@ int generateSHA256sum(char *str, char *result)
 
 int insertBankAccount(bank_account_t newAccount)
 {
-    pthread_mutex_lock(&account_array_mutex);
 
     if (newAccount.account_id >= MAX_BANK_ACCOUNTS){
 
-        pthread_mutex_unlock(&account_array_mutex);
+       
         return -1;
     }
+
+    pthread_mutex_lock(&account_mutex[newAccount.account_id]);
+
     if (existsBankAccount(newAccount.account_id)){
 
-        pthread_mutex_unlock(&account_array_mutex);
+        pthread_mutex_unlock(&account_mutex[newAccount.account_id]);
         return -2;
     }
         
     accounts[newAccount.account_id] = newAccount;
 
-    pthread_mutex_lock(&log_file_mutex);
     logAccountCreation(log_file_fd,pthread_self(),&accounts[newAccount.account_id]);
-    pthread_mutex_unlock(&log_file_mutex);
     
-    pthread_mutex_unlock(&account_array_mutex);
+    pthread_mutex_unlock(&account_mutex[newAccount.account_id]);
 
     return 0;
 }
@@ -207,13 +207,9 @@ int createBankOffices(unsigned int quantity)
 
     for (unsigned int i = 1; i <= quantity; i++)
     {
-
-        pthread_create(&offices[i].tid, NULL, bank_office_func_stub, NULL);
         offices[i].id = i;
-
-        pthread_mutex_lock(&log_file_mutex);
+        pthread_create(&offices[i].tid, NULL, bank_office_func_stub, (void*) &offices[i].id);
         logBankOfficeOpen(log_file_fd,i,offices[i].tid);
-        pthread_mutex_unlock(&log_file_mutex);
     }
 
     return 0;
@@ -221,9 +217,15 @@ int createBankOffices(unsigned int quantity)
 
 void *bank_office_func_stub(void *stub)
 {
+    uint32_t officeID = *( (uint32_t*)stub);
+    int semValue;
 
     while (true)
     {   
+
+        sem_getvalue(&full,&semValue);
+        logSyncMechSem(log_file_fd,pthread_self(),SYNC_OP_SEM_WAIT,SYNC_ROLE_CONSUMER,officeID,semValue);
+
         print_location();
         sem_wait(&full); 
         print_location();
@@ -233,9 +235,7 @@ void *bank_office_func_stub(void *stub)
         print_location();
         tlv_request_t currentRequest = queue_pop(&requests);
 
-        pthread_mutex_lock(&log_file_mutex);
         logRequest(log_file_fd,pthread_self(),&currentRequest);
-        pthread_mutex_unlock(&log_file_mutex);
 
         pthread_mutex_unlock(&request_queue_mutex);
         sem_post(&empty);
@@ -469,6 +469,8 @@ int handleRequest(tlv_request_t request)
         }
     }
 
+    print_location();
+
     sendReply(request,reply);    
 
     return 0;
@@ -488,10 +490,12 @@ int sendReply(tlv_request_t request, tlv_reply_t reply){
 
         return -1;
     }
+
+    print_location();
     
-    pthread_mutex_lock(&log_file_mutex);
+    print_location();
     logReply(log_file_fd,pthread_self(),&reply);
-    pthread_mutex_unlock(&log_file_mutex);
+    print_location();
 
     write(reply_fifo_fd,&reply,sizeof(tlv_reply_t));
     close(reply_fifo_fd);
@@ -517,9 +521,7 @@ int waitForRequests()
         read(request_fifo_fd, &received_request, sizeof(tlv_request_t));
         print_location();
         
-        pthread_mutex_lock(&log_file_mutex);
         logRequest(log_file_fd,pthread_self(),&received_request);
-        pthread_mutex_unlock(&log_file_mutex);
 
         sem_wait(&empty);
         pthread_mutex_lock(&request_queue_mutex);
