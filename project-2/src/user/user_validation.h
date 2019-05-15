@@ -5,16 +5,18 @@
 #include "stdlib.h"
 #include "errno.h"
 #include "stdbool.h"
-#include "sope.h"
-#include "constants.h"
-#include "types.h"
+
 #include "signal.h"
 #include "string.h"
 #include "time.h"
 #include "sys/types.h"
 #include "sys/stat.h"
 #include "fcntl.h"
-#include "debug.h"
+
+#include "../types.h"
+#include "../debug.h"
+#include "../sope.h"
+#include "../constants.h"
 
 int validUserAccount(user_command_t* command, char* accountID);
 
