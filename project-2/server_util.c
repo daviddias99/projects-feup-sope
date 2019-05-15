@@ -224,10 +224,13 @@ void *bank_office_func_stub(void *stub)
 
     while (true)
     {   
-
+        print_location();
         sem_wait(&full); 
+        print_location();
+
         pthread_mutex_lock(&request_queue_mutex);
 
+        print_location();
         tlv_request_t currentRequest = queue_pop(&requests);
 
         pthread_mutex_lock(&log_file_mutex);
@@ -251,8 +254,10 @@ int checkRequestHeader(req_header_t header)
     if (account.account_id == ERROR_ACCOUNT_ID)
         return -1;
 
-    if (!passwordIsCorrect(account, header.password))
-        return -2;
+    if (!passwordIsCorrect(account, header.password)) {
+        print_location();
+       return -2;
+    }
 
     return 0;
 }
@@ -508,8 +513,9 @@ int waitForRequests()
     while (true)
     {
         tlv_request_t received_request;
-
+        print_location();
         read(request_fifo_fd, &received_request, sizeof(tlv_request_t));
+        print_location();
         
         pthread_mutex_lock(&log_file_mutex);
         logRequest(log_file_fd,pthread_self(),&received_request);
@@ -521,7 +527,15 @@ int waitForRequests()
         queue_push(&requests, received_request);
 
         pthread_mutex_unlock(&request_queue_mutex);
+        print_location();
+        int value = 0;
+        sem_getvalue(&full, &value);
+        print_dbg("sem full value %d\n", value);
         sem_post(&full);
+        value = 0;
+        sem_getvalue(&full, &value);
+        print_dbg("sem full value %d\n", value);
+        print_location();
 
     }
 

@@ -1,0 +1,7 @@
+I - 00001 - OPEN  140471791322880
+I - 00002 - OPEN  140471782930176
+I - 00003 - OPEN  140471774537472
+S - 590944064 - P00000 SEM_INIT [val=3]
+S - 590944064 - P00000 SEM_INIT [val=0]
+R - 590944064 - [ 70 bytes] 11378 (0001, "password")             [    0 ms] CREATE   0001         30€ "password"
+R - 590939904 - [ 70 bytes] 11378 (0001, "password")             [    0 ms] CREATE   0001         30€ "password"
