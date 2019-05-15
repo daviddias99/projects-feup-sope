@@ -1,6 +1,18 @@
 #include "server_util.h"
+#include <semaphore.h>
 
+bank_account_t accounts[MAX_BANK_ACCOUNTS];
+pthread_mutex_t account_mutex[MAX_BANK_ACCOUNTS];
+int request_fifo_fd;
+int request_fifo_fd_DUMMY;
 int log_file_fd;
+
+sem_t empty;
+sem_t full;
+pthread_mutex_t request_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t account_array_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t log_file_mutex = PTHREAD_MUTEX_INITIALIZER;
+bank_office_t offices[MAX_BANK_OFFICES];
 
 bool passwordIsValid(char *password)
 {
@@ -58,6 +70,58 @@ int generateSalt(char *saltStr)
     return 0;
 }
 
+bank_account_t createAdminBankAccount(char *password)
+{
+
+    return createBankAccount(ADMIN_ACCOUNT_ID, password, 0);
+}
+
+bank_account_t createBankAccount(uint32_t id, char *password, uint32_t balance)
+{
+
+    bank_account_t newBankAccount;
+
+    newBankAccount.account_id = id;
+    newBankAccount.balance = balance;
+    generateSalt(newBankAccount.salt);
+
+    char temp[MAX_PASSWORD_LEN + SALT_LEN];
+
+    strcpy(temp, password);
+    strcat(temp, newBankAccount.salt);
+
+    generateSHA256sum(temp, newBankAccount.hash);
+
+    return newBankAccount;
+}
+
+bank_account_t findBankAccount(uint32_t id)
+{
+    return accounts[id];
+}
+
+
+int initAccounts(){
+
+    for(size_t i = 0; i < MAX_BANK_ACCOUNTS;i++){
+
+        pthread_mutex_init(&account_mutex[i],NULL);
+        accounts[i] = errorAccount();
+
+    }
+
+    return 0;
+}
+
+bank_account_t errorAccount(){
+
+    bank_account_t error;
+
+    error.account_id = ERROR_ACCOUNT_ID;
+
+    return error;
+}
+
 int generateSHA256sum(char *str, char *result)
 {
     int fd1[2];
@@ -97,10 +161,50 @@ int generateSHA256sum(char *str, char *result)
     return 0;
 }
 
-int openLogfile(){
+int insertBankAccount(bank_account_t newAccount)
+{
+    pthread_mutex_lock(&account_array_mutex);
 
+    if (newAccount.account_id >= MAX_BANK_ACCOUNTS){
 
-    log_file_fd = open(SERVER_LOGFILE,O_WRONLY | O_APPEND,0660);
+        pthread_mutex_unlock(&account_array_mutex);
+        return -1;
+    }
+    if (existsBankAccount(newAccount.account_id)){
+
+        pthread_mutex_unlock(&account_array_mutex);
+        return -2;
+    }
+        
+    accounts[newAccount.account_id] = newAccount;
+
+    pthread_mutex_lock(&log_file_mutex);
+    logAccountCreation(log_file_fd,pthread_self(),&accounts[newAccount.account_id]);
+    pthread_mutex_unlock(&log_file_mutex);
+    
+    pthread_mutex_unlock(&account_array_mutex);
+
+    return 0;
+}
+
+bool existsBankAccount(uint32_t id)
+{
+
+    if(id >= MAX_BANK_ACCOUNTS)
+        return false;
+
+    if (accounts[id].account_id != ERROR_ACCOUNT_ID)
+        return true;
+        
+    return false;
+}
+
+int createBankOffices(unsigned int quantity)
+{
+
+    offices[0].id = MAIN_THREAD_ID;
+    offices[0].tid = pthread_self();
+
     for (unsigned int i = 1; i <= quantity; i++)
     {
 
@@ -449,7 +553,11 @@ int initSyncMechanisms(size_t thread_cnt)
     return 0;
 }
 
-int getLogfileFD(){
 
-    return log_file_fd;
+int openLogFile(){
+
+
+    log_file_fd = open(SERVER_LOGFILE,O_WRONLY | O_APPEND,0660);
+
+    return 0;
 }
