@@ -3,7 +3,30 @@
 int request_fifo_fd;
 int response_fifo_fd;
 char response_filename[USER_FIFO_PATH_LEN];
-user_command_t command = {0, "", 0, 0, ""};
+user_command_t command;
+
+static const char* ERROR_MESSAGES[] = {
+    [OK] = "Operation successful",
+    [NEG_ACCOUNT_ID] = "Account ID can't be negative.",
+    [LRG_ACCOUNT_ID] = "Account ID too large.",
+    [SRT_PASSWORD] = "Password was too short.",
+    [LNG_PASSWORD] = "Password was too long.",
+    [BAD_PASSWORD] = "Password can't contain blank spaces.",
+    [NEG_DELAY] = "Operation delay can't be negative or zero.",
+    [LNG_DELAY] = "Operation delay was too long.",
+    [INV_OPERATION] = "Choosen operation doesn't exist.",
+    [INV_NEW_ACCOUNT_ID] = "New account ID is not accepted.",
+    [SRT_BALANCE] = "New account balance is too small.",
+    [LRG_BALANCE] = "New account balance is too large.",
+    [INV_NEW_PASSWORD] = "New account password is invalid.",
+    [INV_TRS_ACCOUNT] = "Recipient account ID is not accepted.",
+    [SML_TRSF_AMOUNT] = "Transfering amount is too small.",
+    [LRG_TRSF_AMOUNT] = "Transfering amount is too large.",
+    [INV_OP_ARGUMENTS] = "Operation doesn't accept those arguments.",
+    [LOG_REQUEST_ERROR] = "Failed to record request on user log file.",
+    [LOG_REPLY_ERROR] = "Failed to record reply on user log file.",
+    [OTHER_ERROR] = "Something went wrong.",
+};
 
 void alarm_handler(int signo){
 
@@ -14,6 +37,16 @@ void alarm_handler(int signo){
     closeComunication();
 
     raise(SIGKILL); // Ends the program
+}
+
+void printErrorMessage(int error){
+    printf("Error: %s\n", ERROR_MESSAGES[error]);    
+}
+
+int readCommand(user_command_t* user_command){
+    command = *user_command;
+
+    return 0;
 }
 
 int setupRequestFIFO(){
@@ -110,193 +143,6 @@ int recordOperation(tlv_request_t* request, tlv_reply_t* reply){
     }
 
     return 0;
-}
-
-int validAccount(char* accountID){
-
-    int ID = atoi(accountID);
-
-    command.accountID = ID;
-
-    if(ID < 0)
-        return NEG_ACCOUNT_ID;
-
-    if(ID > MAX_BANK_ACCOUNTS)
-        return LRG_ACCOUNT_ID;
-
-    return OK;
-}
-
-int validPassword(char* password){
-    size_t password_length = strlen(password);
-
-    if(password_length < MIN_PASSWORD_LEN)
-        return SRT_PASSWORD;
-
-    if(password_length > MAX_PASSWORD_LEN)
-        return LNG_PASSWORD;
-
-    char* token = strtok(password, " ");
-
-    if(strlen(token) != password_length) // Checks if there are no blanck spaces (not sure it works yet)
-        return BAD_PASSWORD;
-
-    memcpy(command.password, password, MAX_PASSWORD_LEN + 1);
-
-    return OK;
-}
-
-int validDelay(char* delay){
-    int op_delay = atoi(delay);
-
-    if(op_delay < 0)
-        return NEG_DELAY;
-
-    if(op_delay > MAX_OP_DELAY_MS)
-        return LNG_DELAY;
-
-    command.delay = op_delay;
-
-    return OK;
-}
-
-int validOperation(char* operation){
-    int op_number = atoi(operation);
-
-    if(op_number < 0)
-        return INV_OPERATION;
-
-    if(op_number > 3)
-        return INV_OPERATION;
-
-    command.operation = op_number;
-
-    return OK;
-}
-
-int validArguments(char* arguments){
-
-    command.arguments = arguments;
-
-    switch(command.operation){
-        case 0:
-            return validCreationOperation(arguments);
-        case 1: 
-            return validBalanceOperation(arguments);
-        case 2:
-            return validTransferOperation(arguments);
-        case 3:
-            return validShutdownOperation(arguments);
-        default:
-            return OK;
-    }
-}
-
-int validCreationOperation(char* arguments){
-    
-    char* temp_Args = (char*) malloc(sizeof(char) * strlen(arguments) + 1);
-
-    memcpy(temp_Args,arguments,strlen(arguments)+1);
-
-    if(strlen(temp_Args) == 0)
-        return INV_OP_ARGUMENTS;
-
-    char* newAccountID = strtok(temp_Args, " ");
-
-    if(validAccount(newAccountID) != OK)
-        return INV_NEW_ACCOUNT_ID;
-
-    char* token = strtok(NULL, " ");
-
-    long unsigned int balance = atoi(token);
-
-    if(balance < 1)
-        return SRT_BALANCE;
-
-    if(balance > MAX_BALANCE)
-        return LRG_BALANCE;
-
-    char* password = strtok(NULL, " ");
-
-    if(validPassword(password) != OK)
-        return INV_NEW_PASSWORD;
-
-    token = strtok(NULL, " ");
-
-    if(token != NULL)
-        return INV_OP_ARGUMENTS;
-
-    return OK;
-}
-
-int validBalanceOperation(char* arguments){
-    if(strlen(arguments) != 0)
-        return INV_OP_ARGUMENTS;
-    
-    return OK;
-}
-
-int validTransferOperation(char* arguments){
-    char* temp_Args = (char*) malloc(sizeof(char) * strlen(arguments) + 1);
-
-    memcpy(temp_Args,arguments,strlen(arguments)+1);
-
-    if(strlen(temp_Args) == 0)
-        return INV_OP_ARGUMENTS;
-
-    char* recipientID = strtok(temp_Args, " ");
-
-    if(validAccount(recipientID) != OK)
-        return INV_TRS_ACCOUNT;
-
-    char* token = strtok(NULL, " ");
-
-    if(strlen(token) == 0)
-        return INV_OP_ARGUMENTS;
-
-    long unsigned int amount = atoi(token);
-
-    if(amount < 1)
-        return SML_TRSF_AMOUNT;
-
-    if(amount > MAX_BALANCE)
-        return LRG_TRSF_AMOUNT;
-
-    token = strtok(NULL, " ");
-
-    if(token != NULL)
-        return INV_OP_ARGUMENTS;
-    
-    return OK;
-}
-
-int validShutdownOperation(char* arguments){
-    if(strlen(arguments) != 0)
-            return INV_OP_ARGUMENTS;
-        
-    return true;
-}
-
-int checkArguments(char* accountID, char* password, char* delay, char* operation, char* arguments){
-
-    int code;
-
-    if((code = validAccount(accountID)) != OK)
-        return code;
-
-    if((code = validPassword(password)) != OK)
-        return code;
-
-    if((code = validDelay(delay)) != OK)
-        return code;
-
-    if((code = validOperation(operation)) != OK)
-        return code;
-
-    if((code = validArguments(arguments)) != OK)
-        return code;
-
-    return OK;
 }
 
 int formatReqCreateAccount(req_value_t* request_value){

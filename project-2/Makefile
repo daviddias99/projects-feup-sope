@@ -4,7 +4,7 @@ ODIR = build
 TARGET_SERVER = server
 TARGET_USER = user
 OBJS_SERVER = $(ODIR)/server_util.o $(ODIR)/server.o $(ODIR)/request_queue.o $(ODIR)/log.o 
-OBJS_USER = $(ODIR)/user_util.o $(ODIR)/user.o $(ODIR)/log.o
+OBJS_USER = $(ODIR)/user_util.o $(ODIR)/user_validation.o $(ODIR)/user.o $(ODIR)/log.o
 
 .PHONY: all clean
 

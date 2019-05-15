@@ -39,6 +39,34 @@
 #define WRITE 1
 #define SHA256_SIZE                   64
 #define REQUEST_FIFO_PERM             0660
+#define RESPONSE_FIFO_PERM            0660
 #define ERROR_ACCOUNT_LIMIT_EXCEEDED  -2
 #define ERROR_ACCOUNT_ID              (MAX_BANK_ACCOUNTS +1)
+
+#define CANCEL_ALARM                  0
+#define UNUSED(x) (void)(x)
+
+#define OK                  0
+#define SRV_DOWN            1
+#define SRV_TIMEOUT         2
+
+#define NEG_ACCOUNT_ID      1
+#define LRG_ACCOUNT_ID      2
+#define SRT_PASSWORD        3
+#define LNG_PASSWORD        4
+#define BAD_PASSWORD        5
+#define NEG_DELAY           6
+#define LNG_DELAY           7
+#define INV_OPERATION       8
+#define INV_NEW_ACCOUNT_ID  9
+#define SRT_BALANCE         10
+#define LRG_BALANCE         11
+#define INV_NEW_PASSWORD    12
+#define INV_TRS_ACCOUNT     13
+#define SML_TRSF_AMOUNT     14
+#define LRG_TRSF_AMOUNT     15
+#define INV_OP_ARGUMENTS    16
+#define LOG_REQUEST_ERROR   17
+#define LOG_REPLY_ERROR     18
+#define OTHER_ERROR         19
 

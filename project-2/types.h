@@ -172,3 +172,13 @@ typedef struct tlv_reply {
   uint32_t length;
   rep_value_t value;
 } __attribute__((packed)) tlv_reply_t;
+
+//===================
+
+typedef struct user_command {
+    uint32_t accountID;
+    char password[MAX_PASSWORD_LEN + 1];
+    uint32_t delay;
+    op_type_t operation;
+    char* arguments;
+} user_command_t;
