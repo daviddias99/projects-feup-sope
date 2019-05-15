@@ -1,4 +1,5 @@
 #include "user_util.h"
+#include "user_validation.h"
 
 int main(int argc, char* argv[]){
 
@@ -8,14 +9,17 @@ int main(int argc, char* argv[]){
     }
 
     int code;
+    user_command_t command;
 
-    if((code = checkArguments(argv[1], argv[2], argv[3], argv[4], argv[5])) != OK){
-        printf("Error: %s\n", ERROR_MESSAGES[code]);
+    if((code = checkArguments(&command, argv[1], argv[2], argv[3], argv[4], argv[5])) != OK){
+        printErrorMessage(code);
         exit(2);
     }
 
     tlv_request_t request;
     tlv_reply_t reply;
+
+    readCommand(&command);
 
     formatRequest(&request);
 
