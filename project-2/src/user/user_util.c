@@ -5,7 +5,7 @@ int response_fifo_fd;
 char response_filename[USER_FIFO_PATH_LEN];
 user_command_t command;
 
-static const char* ERROR_MESSAGES[] = {
+static const char *ERROR_MESSAGES[] = {
     [OK] = "Operation successful",
     [NEG_ACCOUNT_ID] = "Account ID can't be negative.",
     [LRG_ACCOUNT_ID] = "Account ID too large.",
@@ -28,10 +28,11 @@ static const char* ERROR_MESSAGES[] = {
     [OTHER_ERROR] = "Something went wrong.",
 };
 
-void alarm_handler(int signo){
+void alarm_handler(int signo)
+{
 
     UNUSED(signo);
-    
+
     recordError(SRV_TIMEOUT);
 
     closeComunication();
@@ -39,18 +40,22 @@ void alarm_handler(int signo){
     raise(SIGKILL); // Ends the program
 }
 
-void printErrorMessage(int error){
-    printf("Error: %s\n", ERROR_MESSAGES[error]);    
+void printErrorMessage(int error)
+{
+    printf("Error: %s\n", ERROR_MESSAGES[error]);
 }
 
-int readCommand(user_command_t* user_command){
+int readCommand(user_command_t *user_command)
+{
     command = *user_command;
 
     return 0;
 }
 
-int setupRequestFIFO(){
-    if((request_fifo_fd= open(SERVER_FIFO_PATH, O_WRONLY)) == -1){
+int setupRequestFIFO()
+{
+    if ((request_fifo_fd = open(SERVER_FIFO_PATH, O_WRONLY)) == -1)
+    {
         recordError(SRV_DOWN);
         return 1;
     }
@@ -58,42 +63,49 @@ int setupRequestFIFO(){
     return 0;
 }
 
-int setupResponseFIFO(){
+int setupResponseFIFO()
+{
     char fifo_name[USER_FIFO_PATH_LEN];
     pid_t pid = getpid();
-    
+
     sprintf(fifo_name, "%s%05d", USER_FIFO_PATH_PREFIX, pid);
     memcpy(response_filename, fifo_name, USER_FIFO_PATH_LEN);
-    
-    if(mkfifo(fifo_name, RESPONSE_FIFO_PERM) == -1){
+
+    if (mkfifo(fifo_name, RESPONSE_FIFO_PERM) == -1)
+    {
         perror("Response FIFO");
         return 1;
     }
 
-    if((response_fifo_fd = open(fifo_name, O_RDWR | O_NONBLOCK)) == -1){
-        perror("Response FIFO");        
+    if ((response_fifo_fd = open(fifo_name, O_RDWR | O_NONBLOCK)) == -1)
+    {
+        perror("Response FIFO");
         return 2;
     }
-        
+
     int flags;
-    
-    if((flags = fcntl(response_fifo_fd,F_GETFL,0)) == -1){
-        perror("Response FIFO");        
+
+    if ((flags = fcntl(response_fifo_fd, F_GETFL, 0)) == -1)
+    {
+        perror("Response FIFO");
         return 3;
     }
 
     flags &= ~O_NONBLOCK;
 
-    if(fcntl(response_fifo_fd,F_SETFL,flags) == -1){
-        perror("Response FIFO");        
+    if (fcntl(response_fifo_fd, F_SETFL, flags) == -1)
+    {
+        perror("Response FIFO");
         return 4;
     }
 
     return 0;
 }
 
-int closeRequestFIFO(){
-    if(close(request_fifo_fd) == -1){
+int closeRequestFIFO()
+{
+    if (close(request_fifo_fd) == -1)
+    {
         perror("Request FIFO");
         return 1;
     }
@@ -101,8 +113,10 @@ int closeRequestFIFO(){
     return 0;
 }
 
-int closeResponseFIFO(){
-    if(close(response_fifo_fd) == -1){
+int closeResponseFIFO()
+{
+    if (close(response_fifo_fd) == -1)
+    {
         perror("Response FIFO");
         return 1;
     }
@@ -110,12 +124,14 @@ int closeResponseFIFO(){
     return 0;
 }
 
-int closeComunication(){ // change name?
-    
+int closeComunication()
+{ // change name?
+
     closeRequestFIFO();
     closeResponseFIFO();
-    
-    if(unlink(response_filename) == -1){
+
+    if (unlink(response_filename) == -1)
+    {
         perror("Response FIFO.");
         return 1;
     }
@@ -123,21 +139,25 @@ int closeComunication(){ // change name?
     return 0;
 }
 
-int recordOperation(tlv_request_t* request, tlv_reply_t* reply){
+int recordOperation(tlv_request_t *request, tlv_reply_t *reply)
+{
     int fd;
     int pid = getpid();
 
-    if((fd = open(USER_LOGFILE, O_WRONLY | O_APPEND)) == -1){
+    if ((fd = open(USER_LOGFILE, O_WRONLY | O_APPEND)) == -1)
+    {
         perror("User Logfile.");
         return 1;
     }
 
-    if(logRequest(fd, pid, request) < 0){
+    if (logRequest(fd, pid, request) < 0)
+    {
         printf("Error: %s\n", ERROR_MESSAGES[LOG_REQUEST_ERROR]);
         return 2;
     }
 
-    if(logReply(fd, pid, reply) < 0){
+    if (logReply(fd, pid, reply) < 0)
+    {
         printf("Error: %s\n", ERROR_MESSAGES[LOG_REPLY_ERROR]);
         return 3;
     }
@@ -145,20 +165,21 @@ int recordOperation(tlv_request_t* request, tlv_reply_t* reply){
     return 0;
 }
 
-int formatReqCreateAccount(req_value_t* request_value){
-    req_create_account_t create_account;   
+int formatReqCreateAccount(req_value_t *request_value)
+{
+    req_create_account_t create_account;
 
-    char* arguments = (char*) malloc(sizeof(char) * strlen(command.arguments) + 1);
+    char *arguments = (char *)malloc(sizeof(char) * strlen(command.arguments) + 1);
 
-    memcpy(arguments, command.arguments, strlen(command.arguments) + 1);    
+    memcpy(arguments, command.arguments, strlen(command.arguments) + 1);
 
-    char* accountID = strtok(arguments, " ");
-    char* balance = strtok(NULL, " ");
-    char* password = strtok(NULL, " ");
+    char *accountID = strtok(arguments, " ");
+    char *balance = strtok(NULL, " ");
+    char *password = strtok(NULL, " ");
 
     create_account.account_id = atoi(accountID);
     create_account.balance = atoi(balance);
-       
+
     memcpy(create_account.password, password, MAX_PASSWORD_LEN);
 
     request_value->create = create_account;
@@ -166,18 +187,19 @@ int formatReqCreateAccount(req_value_t* request_value){
     return 0;
 }
 
-int formatReqTransfer(req_value_t* request_value){
+int formatReqTransfer(req_value_t *request_value)
+{
     req_transfer_t tranfer;
 
-    char* arguments = (char*) malloc(sizeof(char) * strlen(command.arguments) + 1);
+    char *arguments = (char *)malloc(sizeof(char) * strlen(command.arguments) + 1);
 
-    memcpy(arguments, command.arguments, strlen(command.arguments) + 1);    
+    memcpy(arguments, command.arguments, strlen(command.arguments) + 1);
 
-    char* recipientID = strtok(arguments, " ");
+    char *recipientID = strtok(arguments, " ");
 
-    tranfer.account_id = atoi(recipientID);  
+    tranfer.account_id = atoi(recipientID);
 
-    char* amount = strtok(NULL, " ");
+    char *amount = strtok(NULL, " ");
 
     tranfer.amount = atoi(amount);
 
@@ -186,8 +208,9 @@ int formatReqTransfer(req_value_t* request_value){
     return 0;
 }
 
-int formatReqHeader(req_header_t* header){
-    
+int formatReqHeader(req_header_t *header)
+{
+
     header->pid = getpid();
     header->account_id = command.accountID;
     memcpy(header->password, command.password, MAX_PASSWORD_LEN);
@@ -196,33 +219,36 @@ int formatReqHeader(req_header_t* header){
     return 0;
 }
 
-int formatReqValue(req_value_t* request_value){
+int formatReqValue(req_value_t *request_value)
+{
     req_header_t request_header;
 
     formatReqHeader(&request_header);
 
     request_value->header = request_header;
 
-    switch(command.operation){
-        case 0:
-            formatReqCreateAccount(request_value);
-            break;
-        case 1:
-            break;
-        case 2:
-            formatReqTransfer(request_value);
-            break;
-        case 3:
-            break;
-        default:
-            break;
+    switch (command.operation)
+    {
+    case 0:
+        formatReqCreateAccount(request_value);
+        break;
+    case 1:
+        break;
+    case 2:
+        formatReqTransfer(request_value);
+        break;
+    case 3:
+        break;
+    default:
+        break;
     }
 
     return 0;
 }
 
-int formatRequest(tlv_request_t* request){
-    
+int formatRequest(tlv_request_t *request)
+{
+
     req_value_t request_value;
 
     formatReqValue(&request_value);
@@ -236,13 +262,15 @@ int formatRequest(tlv_request_t* request){
     return 0;
 }
 
-int sendRequest(tlv_request_t* request){
+int sendRequest(tlv_request_t *request)
+{
     write(request_fifo_fd, request, request->length);
 
     return 0;
 }
 
-int formatRepBalanceAccount(rep_value_t* reply_value){
+int formatRepBalanceAccount(rep_value_t *reply_value)
+{
     rep_balance_t reply_balance;
 
     reply_balance.balance = 0; // ATTENTION: Impossible to know if you are the user?
@@ -252,7 +280,8 @@ int formatRepBalanceAccount(rep_value_t* reply_value){
     return 0;
 }
 
-int formatRepTransfer(rep_value_t* reply_value){
+int formatRepTransfer(rep_value_t *reply_value)
+{
     rep_transfer_t reply_transfer;
 
     reply_transfer.balance = 0; // ATTENTION: Impossible to know if you are the user?
@@ -262,7 +291,8 @@ int formatRepTransfer(rep_value_t* reply_value){
     return 0;
 }
 
-int formatRepShutdownTransfer(rep_value_t* reply_value){
+int formatRepShutdownTransfer(rep_value_t *reply_value)
+{
     rep_shutdown_t reply_shutdown;
 
     reply_shutdown.active_offices = 0; // ATTENTION: Impossible to know if you are the user?
@@ -272,40 +302,44 @@ int formatRepShutdownTransfer(rep_value_t* reply_value){
     return 0;
 }
 
-int formatRepHeader(rep_header_t* header, int ret_code){
+int formatRepHeader(rep_header_t *header, int ret_code)
+{
     header->account_id = command.accountID;
     header->ret_code = ret_code;
 
     return 0;
 }
 
-int formatRepValue(rep_value_t* reply_value, int ret_code){
+int formatRepValue(rep_value_t *reply_value, int ret_code)
+{
     rep_header_t header;
 
     formatRepHeader(&header, ret_code);
 
     reply_value->header = header;
 
-    switch(command.operation){
-        case 0:
-            break;
-        case 1:
-            formatRepBalanceAccount(reply_value);
-            break;
-        case 2:
-            formatRepTransfer(reply_value);
-            break;
-        case 3:
-            formatRepShutdownTransfer(reply_value);
-            break;
-        default:
-            break;
+    switch (command.operation)
+    {
+    case 0:
+        break;
+    case 1:
+        formatRepBalanceAccount(reply_value);
+        break;
+    case 2:
+        formatRepTransfer(reply_value);
+        break;
+    case 3:
+        formatRepShutdownTransfer(reply_value);
+        break;
+    default:
+        break;
     }
 
     return 0;
 }
 
-int formatReply(tlv_reply_t* reply, int ret_code){
+int formatReply(tlv_reply_t *reply, int ret_code)
+{
     rep_value_t value;
 
     formatRepValue(&value, ret_code);
@@ -317,7 +351,8 @@ int formatReply(tlv_reply_t* reply, int ret_code){
     return 0;
 }
 
-int recordError(int ret_code){
+int recordError(int ret_code)
+{
     tlv_request_t request;
     tlv_reply_t reply;
 
@@ -329,14 +364,16 @@ int recordError(int ret_code){
     return 0;
 }
 
-int waitResponse(tlv_request_t* request, tlv_reply_t* reply){
+int waitResponse(tlv_request_t *request, tlv_reply_t *reply)
+{
     struct sigaction action;
 
     action.sa_handler = alarm_handler;
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
 
-    if (sigaction(SIGALRM,&action,NULL) < 0){
+    if (sigaction(SIGALRM, &action, NULL) < 0)
+    {
         perror("Alarm Handler");
         return 1;
     }
@@ -349,9 +386,8 @@ int waitResponse(tlv_request_t* request, tlv_reply_t* reply){
 
     alarm(CANCEL_ALARM);
 
-    if(closeComunication() != 0)
+    if (closeComunication() != 0)
         return 1;
 
     return 0;
 }
-

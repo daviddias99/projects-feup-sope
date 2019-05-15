@@ -1,7 +1,7 @@
+#include <string.h>
 #include "../sope.h"
 #include "../constants.h"
 #include "server_util.h"
-#include <string.h>
 
 extern pthread_mutex_t account_mutex[];
 

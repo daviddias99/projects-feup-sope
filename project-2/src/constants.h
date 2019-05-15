@@ -68,5 +68,4 @@
 #define INV_OP_ARGUMENTS    16
 #define LOG_REQUEST_ERROR   17
 #define LOG_REPLY_ERROR     18
-#define OTHER_ERROR         19
-
+#define OTHER_ERROR 19

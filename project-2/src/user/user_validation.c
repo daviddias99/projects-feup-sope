@@ -226,3 +226,4 @@ int checkArguments(user_command_t* command, char* accountID, char* password, cha
 
     return OK;
 }
+
