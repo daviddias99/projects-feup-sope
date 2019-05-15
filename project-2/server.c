@@ -1,7 +1,10 @@
+#include <stdlib.h>
 
+#include "server_old.h"
 #include "server_util.h"
 #include "server_sync.h"
-
+#include "server_accounts.h"
+#include "server_operations.h"
 
 int main(int argc, char* argv[]){
 
