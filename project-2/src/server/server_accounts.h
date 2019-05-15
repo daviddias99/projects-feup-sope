@@ -1,3 +1,6 @@
+#ifndef SERVER_ACCOUNTS_H
+#define SERVER_ACCOUNTS_H
+
 #include <string.h>
 #include "../sope.h"
 #include "../constants.h"
@@ -12,3 +15,5 @@ bank_account_t* findBankAccount(uint32_t id);
 int insertBankAccount(bank_account_t newAccount);
 bool existsBankAccount(uint32_t id);
 bank_account_t errorAccount();
+
+#endif
