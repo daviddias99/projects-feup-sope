@@ -9,7 +9,6 @@ int op_createAccount(req_value_t request_value, tlv_reply_t *reply,uint32_t offi
 
     if (header.account_id != ADMIN_ACCOUNT_ID)
     {
-
         reply->value.header.ret_code = RC_OP_NALLOW;
 
         return -1;
@@ -93,7 +92,7 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
     source = findBankAccount(request_value.header.account_id);
 
 
-    // TODO: REMOVER DEADLOCK
+    // TODO: TESTAR DEADLOCK
     uint32_t first_lock_id, second_lock_id;
 
     if (request_value.transfer.account_id > request_value.header.account_id) {
