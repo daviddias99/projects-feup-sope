@@ -15,7 +15,10 @@ OBJS_USER = $(ODIR)/user_util.o $(ODIR)/user_validation.o $(ODIR)/user.o $(ODIR)
 
 .PHONY: all clean
 
-all: $(TARGET_SERVER) $(TARGET_USER) logfiles
+all: build_dir $(TARGET_SERVER) $(TARGET_USER) logfiles
+	
+build_dir:
+	mkdir -p build
 
 logfiles: 
 	touch slog.txt
@@ -44,7 +47,7 @@ $(ODIR)/%.o: $(SRC_USER)/%.c
 
 
 clean:
-	rm -f $(TARGET_SERVER) $(ODIR)/*.o $(ODIR)/*.d $(ODIR)/*.i $(ODIR)/*.s *.txt *.csv
-	rm -f $(TARGET_USER) $(ODIR)/*.o $(ODIR)/*.d $(ODIR)/*.i $(ODIR)/*.s *.txt *.csv
+	rm -f $(TARGET_SERVER) $(ODIR)/*.o $(ODIR)/*.d $(ODIR)/*.i $(ODIR)/*.s *.txt
+	rm -f $(TARGET_USER) $(ODIR)/*.o $(ODIR)/*.d $(ODIR)/*.i $(ODIR)/*.s *.txt 
 
 -include $(TARGET:=.d)
