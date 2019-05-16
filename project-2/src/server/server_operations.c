@@ -67,6 +67,8 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 
     reply->type = OP_TRANSFER;
 
+    // TODO: isto devia estar dentro de uma seccao critica pq entretanto a conta pode ser criada e depois dá success e n devia dar
+
     if (request_value.header.account_id == ADMIN_ACCOUNT_ID || request_value.transfer.account_id == ADMIN_ACCOUNT_ID)
     {
         reply->value.header.ret_code = RC_OP_NALLOW;
@@ -74,18 +76,18 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
         return -1;
     }
 
-    if (request_value.header.account_id == request_value.transfer.account_id)
-    {
-        reply->value.header.ret_code = RC_SAME_ID;
-
-        return -2;
-    }
-
     if (!existsBankAccount(request_value.transfer.account_id))
     {
         reply->value.header.ret_code = RC_ID_NOT_FOUND;
 
         return -3;
+    }
+
+    if (request_value.header.account_id == request_value.transfer.account_id)
+    {
+        reply->value.header.ret_code = RC_SAME_ID;
+
+        return -2;
     }
 
     dest = findBankAccount(request_value.transfer.account_id);

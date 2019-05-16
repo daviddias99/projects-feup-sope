@@ -139,7 +139,8 @@ int handleRequest(tlv_request_t request, uint32_t officeID)
     reply.type = type;
 
     int headerCheckStatus = checkRequestHeader(header);
-
+    // TODO: as ordens da verificacao estao ao contrario
+    // TODO: METER EM SECCAO CRITICA
     if (headerCheckStatus != 0)
     {
         if (headerCheckStatus == -1)
