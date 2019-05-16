@@ -114,6 +114,8 @@ int validArguments(user_command_t* command, char* arguments){
 
     command->arguments = arguments;
 
+    print_location();
+
     switch(command->operation){
         case 0:
             return validCreationOperation(arguments);
@@ -201,8 +203,8 @@ int validTransferOperation(char* arguments){
 int validShutdownOperation(char* arguments){
     if(strlen(arguments) != 0)
             return INV_OP_ARGUMENTS;
-        
-    return true;
+
+    return OK;
 }
 
 int checkArguments(user_command_t* command, char* accountID, char* password, char* delay, char* operation, char* arguments){

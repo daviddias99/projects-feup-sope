@@ -46,6 +46,7 @@ void *bank_office_service_routine(void *officeIDPtr)
 
         sem_wait(&full);
 
+        logSyncMech(getLogfile(),MAIN_THREAD_ID,SYNC_OP_MUTEX_LOCK,SYNC_ROLE_CONSUMER,0);
         pthread_mutex_lock(&request_queue_mutex);
 
         tlv_request_t currentRequest = queue_pop(&requests);
@@ -53,6 +54,8 @@ void *bank_office_service_routine(void *officeIDPtr)
         logRequest(getLogfile(), pthread_self(), &currentRequest);
 
         pthread_mutex_unlock(&request_queue_mutex);
+        logSyncMech(getLogfile(),MAIN_THREAD_ID,SYNC_OP_MUTEX_UNLOCK,SYNC_ROLE_CONSUMER,currentRequest.value.header.pid);
+        
         sem_post(&empty);
 
         sem_getvalue(&empty, &semValue);
@@ -84,7 +87,6 @@ void *bank_office_service_routine(void *officeIDPtr)
 
 int checkRequestHeader(req_header_t header)
 {
-    print_location();
 
     if (!existsBankAccount(header.account_id))
         return -1;
@@ -242,11 +244,13 @@ int waitForRequests()
         logSyncMechSem(getLogfile(), pthread_self(), SYNC_OP_SEM_WAIT, SYNC_ROLE_PRODUCER, MAIN_THREAD_ID, semValue);
         sem_wait(&empty);
 
+        logSyncMech(getLogfile(),MAIN_THREAD_ID,SYNC_OP_MUTEX_LOCK,SYNC_ROLE_PRODUCER,received_request.value.header.pid);
         pthread_mutex_lock(&request_queue_mutex);
 
         queue_push(&requests, received_request);
 
         pthread_mutex_unlock(&request_queue_mutex);
+        logSyncMech(getLogfile(),MAIN_THREAD_ID,SYNC_OP_MUTEX_UNLOCK,SYNC_ROLE_PRODUCER,received_request.value.header.pid);
 
         sem_post(&full);
         sem_getvalue(&full, &semValue);
