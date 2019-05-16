@@ -58,7 +58,7 @@ void *bank_office_service_routine(void *officeIDPtr)
         sem_getvalue(&empty, &semValue);
         logSyncMechSem(getLogfile(), pthread_self(), SYNC_OP_SEM_POST, SYNC_ROLE_CONSUMER, officeID, semValue);
 
-        handleRequest(currentRequest);
+        handleRequest(currentRequest,officeID);
 
         pthread_mutex_lock(&shutdown_mutex);
 
@@ -123,7 +123,7 @@ int getActiveThreadCount(){
     return active_thread_cnt;
 }
 
-int handleRequest(tlv_request_t request)
+int handleRequest(tlv_request_t request,uint32_t officeID)
 {
     enum op_type type = request.type;
     req_header_t header = request.value.header;
@@ -151,25 +151,27 @@ int handleRequest(tlv_request_t request)
         switch (type)
         {
         case OP_CREATE_ACCOUNT:
-            op_createAccount(request.value, &reply);
+            op_createAccount(request.value, &reply,officeID);
 
             break;
 
         case OP_BALANCE:
 
-            op_checkBalance(request.value, &reply);
+            op_checkBalance(request.value, &reply,officeID);
 
             break;
 
         case OP_TRANSFER:
 
-            op_transfer(request.value, &reply);
+            op_transfer(request.value, &reply,officeID);
 
             break;
 
         case OP_SHUTDOWN:
 
-            op_shutdown(request.value,&reply);
+            op_shutdown(request.value,&reply,officeID);
+            logDelay(getLogfile(),officeID,request.value.header.op_delay_ms);
+            usleep(request.value.header.op_delay_ms);
             shutdown_server();
             reply.value.shutdown.active_offices = getActiveThreadCount();
 

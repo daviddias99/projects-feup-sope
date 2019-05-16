@@ -35,7 +35,7 @@ int main(int argc, char* argv[]){
     memset(argv[2],0,strlen(argv[2])); // don't store the admins password in plain text
 
     requests = *queue_create();
-    insertBankAccount(adminAccount);
+    insertBankAccount(adminAccount,0,MAIN_THREAD_ID);
 
     createBankOffices(bankOfficeCount);
 

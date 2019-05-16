@@ -27,7 +27,7 @@ bank_account_t createAdminBankAccount(char *password)
     return createBankAccount(ADMIN_ACCOUNT_ID, password, 0);
 }
 
-int insertBankAccount(bank_account_t newAccount)
+int insertBankAccount(bank_account_t newAccount, uint32_t delay,uint32_t officeID)
 {
 
     if (newAccount.account_id >= MAX_BANK_ACCOUNTS)
@@ -37,6 +37,9 @@ int insertBankAccount(bank_account_t newAccount)
     }
 
     pthread_mutex_lock(&account_mutex[newAccount.account_id]);
+
+    logDelay(getLogfile(),officeID,delay);
+    usleep(delay);
 
     if (existsBankAccount(newAccount.account_id))
     {

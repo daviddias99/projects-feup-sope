@@ -1,6 +1,6 @@
 #include "server_operations.h"
 
-int op_createAccount(req_value_t request_value, tlv_reply_t *reply)
+int op_createAccount(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 {
 
     req_header_t header = request_value.header;
@@ -17,13 +17,11 @@ int op_createAccount(req_value_t request_value, tlv_reply_t *reply)
 
     bank_account_t newAccount = createBankAccount(request_value.create.account_id, request_value.create.password, request_value.create.balance);
 
-    if (insertBankAccount(newAccount) == ERROR_ACCOUNT_LIMIT_EXCEEDED)
+    if (insertBankAccount(newAccount,request_value.header.op_delay_ms,officeID) == ERROR_ACCOUNT_LIMIT_EXCEEDED)
     {
 
         reply->value.header.ret_code = RC_OTHER;
 
-        bank_account_t errorAccount();
-        int initAccounts();
         return -2;
     }
 
@@ -33,7 +31,7 @@ int op_createAccount(req_value_t request_value, tlv_reply_t *reply)
     return 0;
 }
 
-int op_checkBalance(req_value_t request_value, tlv_reply_t *reply)
+int op_checkBalance(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 {
 
     req_header_t header = request_value.header;
@@ -52,16 +50,25 @@ int op_checkBalance(req_value_t request_value, tlv_reply_t *reply)
 
     reply->value.header.account_id = request_value.header.account_id;
     reply->value.header.ret_code = RC_OK;
+
+    pthread_mutex_lock(&account_mutex[reply->value.header.account_id]);
+
+    logDelay(getLogfile(),officeID,header.op_delay_ms);
+    usleep(header.op_delay_ms);
     reply->value.balance.balance = account.balance;
+
+    pthread_mutex_unlock(&account_mutex[reply->value.header.account_id]);
 
     return 0;
 }
 
-int op_transfer(req_value_t request_value, tlv_reply_t *reply)
+int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 {
 
     req_header_t header = request_value.header;
     bank_account_t *source = NULL, *dest = NULL;
+
+    UNUSED(officeID);
 
     reply->type = OP_TRANSFER;
 
@@ -127,7 +134,9 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply)
     return 0;
 }
 
-int op_shutdown(req_value_t request_value, tlv_reply_t* reply){
+int op_shutdown(req_value_t request_value, tlv_reply_t* reply,uint32_t officeID){
+
+    UNUSED(officeID);
 
     req_header_t header = request_value.header;
 

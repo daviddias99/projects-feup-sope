@@ -12,7 +12,7 @@ int initAccounts();
 bank_account_t createBankAccount(uint32_t id, char* password, uint32_t balance);
 bank_account_t createAdminBankAccount(char* password);
 bank_account_t* findBankAccount(uint32_t id);
-int insertBankAccount(bank_account_t newAccount);
+int insertBankAccount(bank_account_t newAccount, uint32_t delay,uint32_t officeID);
 bool existsBankAccount(uint32_t id);
 bank_account_t errorAccount();
 
