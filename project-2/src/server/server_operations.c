@@ -111,6 +111,7 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
     pthread_mutex_lock(&account_mutex[first_lock_id]);
     pthread_mutex_lock(&account_mutex[second_lock_id]);
 
+    usleep(MS_TO_US(request_value.header.op_delay_ms));
 
     if (source->balance < request_value.transfer.amount)
     {
