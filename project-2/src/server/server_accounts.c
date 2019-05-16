@@ -32,10 +32,10 @@ int insertBankAccount(bank_account_t newAccount, uint32_t delay,uint32_t officeI
 
     if (newAccount.account_id >= MAX_BANK_ACCOUNTS)
     {
-
         return -1;
     }
 
+    logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_LOCK,SYNC_ROLE_ACCOUNT,0);
     pthread_mutex_lock(&account_mutex[newAccount.account_id]);
 
     logDelay(getLogfile(),officeID,delay);
@@ -43,8 +43,8 @@ int insertBankAccount(bank_account_t newAccount, uint32_t delay,uint32_t officeI
 
     if (existsBankAccount(newAccount.account_id))
     {
-
         pthread_mutex_unlock(&account_mutex[newAccount.account_id]);
+        logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_UNLOCK,SYNC_ROLE_ACCOUNT,0);
         return -2;
     }
 
@@ -53,6 +53,7 @@ int insertBankAccount(bank_account_t newAccount, uint32_t delay,uint32_t officeI
     logAccountCreation(getLogfile(), pthread_self(), &accounts[newAccount.account_id]);
 
     pthread_mutex_unlock(&account_mutex[newAccount.account_id]);
+    logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_UNLOCK,SYNC_ROLE_ACCOUNT,0);
 
     return 0;
 }

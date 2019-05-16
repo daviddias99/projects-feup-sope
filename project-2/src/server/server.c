@@ -25,14 +25,13 @@ int main(int argc, char* argv[]){
         fprintf( stderr, "Invalid password\n");
         exit(-2);
     }
+    bank_account_t adminAccount = createAdminBankAccount(adminPassword);
+
+    memset(argv[2],0,strlen(argv[2])); // don't store the admins password in plain text
 
     openLogFile();
     initSyncMechanisms((size_t)bankOfficeCount);
     initAccounts();
-
-    bank_account_t adminAccount = createAdminBankAccount(adminPassword);
-
-    memset(argv[2],0,strlen(argv[2])); // don't store the admins password in plain text
 
     requests = *queue_create();
     insertBankAccount(adminAccount,0,MAIN_THREAD_ID);
