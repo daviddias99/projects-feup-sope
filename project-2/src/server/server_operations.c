@@ -126,3 +126,22 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply)
 
     return 0;
 }
+
+int op_shutdown(req_value_t request_value, tlv_reply_t* reply){
+
+    req_header_t header = request_value.header;
+
+    reply->type = OP_SHUTDOWN;
+
+    if (header.account_id != ADMIN_ACCOUNT_ID)
+    {
+
+        reply->value.header.ret_code = RC_OP_NALLOW;
+
+        return -1;
+    }
+
+    reply->value.header.ret_code = RC_OK;
+
+    return 0;
+}

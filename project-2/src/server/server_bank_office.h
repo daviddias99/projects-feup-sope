@@ -31,7 +31,7 @@ RequestQueue_t requests;
 
 
 int createBankOffices(unsigned int quantity);
-void *bank_office_func_stub(void *stub);
+void *bank_office_service_routine(void *officeIDPtr);
 
 
 int waitForRequests();
@@ -41,5 +41,8 @@ int sendReply(tlv_request_t request, tlv_reply_t reply);
 int handleRequest(tlv_request_t request);
 int checkRequestHeader(req_header_t header);
 bool passwordIsCorrect(bank_account_t account,char* pwd);
+
+int shutdown_server();
+int getActiveThreadCount();
 
 #endif
