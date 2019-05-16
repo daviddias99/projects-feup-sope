@@ -65,13 +65,10 @@ void *bank_office_service_routine(void *officeIDPtr)
 
         pthread_mutex_lock(&shutdown_mutex);
 
-        print_location();
     
         if(shutdown){
 
             sem_getvalue(&full,&semValue);
-
-            print_location();
 
             if(semValue == 0){
 
@@ -81,13 +78,11 @@ void *bank_office_service_routine(void *officeIDPtr)
     
         }
 
-        print_location();
 
         pthread_mutex_unlock(&shutdown_mutex);
 
     }
 
-    print_location();
 
     return officeIDPtr;
 }
@@ -141,19 +136,22 @@ int handleRequest(tlv_request_t request,uint32_t officeID)
     tlv_reply_t reply;
     reply.length = sizeof(tlv_reply_t);
     reply.value.header.account_id = request.value.header.account_id;
-
+    reply.type = type;
+    
     int headerCheckStatus = checkRequestHeader(header);
 
     if (headerCheckStatus != 0)
     {
         if (headerCheckStatus == -1)
         {
-            print_location();
             reply.value.header.ret_code = RC_ID_NOT_FOUND;
         }
 
-        if (headerCheckStatus == -2)
+        if (headerCheckStatus == -2){
+
             reply.value.header.ret_code = RC_LOGIN_FAIL;
+        }
+            
     }
     else
     {
@@ -191,9 +189,8 @@ int handleRequest(tlv_request_t request,uint32_t officeID)
         }
     }
 
-    print_location();
     sendReply(request, reply);
-    print_location();
+
 
     return 0;
 }
@@ -241,10 +238,7 @@ int waitForRequests()
     while (!shutdown || !isEOF)
     {
 
-        print_location();
         int nRead = read(request_fifo_fd, &received_request, sizeof(tlv_request_t));
-
-        print_dbg("--- %d \n",nRead);
 
         if(nRead == 0){
 
@@ -270,8 +264,6 @@ int waitForRequests()
         logSyncMechSem(getLogfile(), pthread_self(), SYNC_OP_SEM_POST, SYNC_ROLE_PRODUCER, MAIN_THREAD_ID, semValue);
     }
 
-    print_location();
-
     unlink(SERVER_FIFO_PATH);
 
     return 0;
@@ -280,14 +272,13 @@ int waitForRequests()
 
 int shutdown_server(){
 
-    print_location();
     shutdown = true;
     umask(0);
     fchmod(request_fifo_fd,S_IRUSR | S_IRGRP | S_IROTH);
     close(request_fifo_fd);
     close(request_fifo_fd_DUMMY);
-    print_location();
 
     return 0;
 }
+
 

@@ -1,2 +1,8 @@
-E - 28687 - [ 70 bytes] 28687 (0000, "123456789")            [    0 ms] SHUTDOWN
-R - 28687 - [ 20 bytes] 0000 SHUTDOWN           OK 0
+E - 10617 - [ 70 bytes] 10617 (0000, "wrong_password")       [   10 ms] CREATE   0001         25€ "top_secret"
+R - 10617 - [ 20 bytes] 0000   CREATE   LOGIN_FAIL
+E - 11544 - [ 70 bytes] 11544 (0000, "123456789")            [   10 ms] SHUTDOWN
+R - 11544 - [ 20 bytes] 0000 SHUTDOWN           OK 0
+E - 11834 - [ 70 bytes] 11834 (0000, "wrong_password")       [   10 ms] CREATE   0001         25€ "top_secret"
+R - 11834 - [ 20 bytes] 0000   CREATE   LOGIN_FAIL
+E - 12125 - [ 70 bytes] 12125 (0000, "123456789")            [   10 ms] SHUTDOWN
+R - 12125 - [ 20 bytes] 0000 SHUTDOWN           OK 0
