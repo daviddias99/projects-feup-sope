@@ -69,10 +69,6 @@ int generateSalt(char *saltStr)
     return 0;
 }
 
-
-
-
-
 int generateSHA256sum(char *str, char *result)
 {
     int fd1[2];
@@ -111,6 +107,7 @@ int generateSHA256sum(char *str, char *result)
     close(fd1[READ]);
 
     result[SHA256_SIZE] = '\0';
+    wait(PID);
 
     return 0;
 }
