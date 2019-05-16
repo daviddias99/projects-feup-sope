@@ -46,6 +46,8 @@
 #define CANCEL_ALARM                  0
 #define UNUSED(x) (void)(x)
 
+#define MS_TO_US(x)         (x * 1000)
+
 #define OK                  0
 #define SRV_DOWN            1
 #define SRV_TIMEOUT         2

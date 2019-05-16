@@ -54,7 +54,7 @@ int op_checkBalance(req_value_t request_value, tlv_reply_t *reply,uint32_t offic
     pthread_mutex_lock(&account_mutex[reply->value.header.account_id]);
 
     logDelay(getLogfile(),officeID,header.op_delay_ms);
-    usleep(header.op_delay_ms);
+    usleep(MS_TO_US(header.op_delay_ms));
     reply->value.balance.balance = account.balance;
 
     pthread_mutex_unlock(&account_mutex[reply->value.header.account_id]);
@@ -64,25 +64,21 @@ int op_checkBalance(req_value_t request_value, tlv_reply_t *reply,uint32_t offic
 
 int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 {
-
-    req_header_t header = request_value.header;
     bank_account_t *source = NULL, *dest = NULL;
 
     UNUSED(officeID);
 
     reply->type = OP_TRANSFER;
 
-    if (header.account_id == ADMIN_ACCOUNT_ID)
+    if (request_value.header.account_id == ADMIN_ACCOUNT_ID || request_value.transfer.account_id == ADMIN_ACCOUNT_ID)
     {
-
         reply->value.header.ret_code = RC_OP_NALLOW;
 
         return -1;
     }
 
-    if (header.account_id == request_value.transfer.account_id)
+    if (request_value.header.account_id == request_value.transfer.account_id)
     {
-
         reply->value.header.ret_code = RC_SAME_ID;
 
         return -2;
@@ -90,7 +86,6 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 
     if (!existsBankAccount(request_value.transfer.account_id))
     {
-
         reply->value.header.ret_code = RC_ID_NOT_FOUND;
 
         return -3;
@@ -99,9 +94,26 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
     dest = findBankAccount(request_value.transfer.account_id);
     source = findBankAccount(request_value.header.account_id);
 
+
+    // TODO: REMOVER DEADLOCK
+    uint32_t first_lock_id, second_lock_id;
+
+    if (request_value.transfer.account_id > request_value.header.account_id) {
+        first_lock_id = request_value.transfer.account_id;
+        second_lock_id = request_value.header.account_id;
+    }
+    else {
+        first_lock_id = request_value.header.account_id;
+        second_lock_id = request_value.transfer.account_id;    
+    }
+
+
+    pthread_mutex_lock(&account_mutex[first_lock_id]);
+    pthread_mutex_lock(&account_mutex[second_lock_id]);
+
+
     if (source->balance < request_value.transfer.amount)
     {
-
         reply->value.header.ret_code = RC_NO_FUNDS;
 
         return -4;
@@ -109,24 +121,18 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 
     if (dest->balance + request_value.transfer.amount > MAX_BALANCE)
     {
-
         reply->value.header.ret_code = RC_TOO_HIGH;
 
         return -5;
     }
-
-    // TODO: REMOVER DEADLOCK
-
-    pthread_mutex_lock(&account_mutex[request_value.transfer.account_id]);
-    pthread_mutex_lock(&account_mutex[request_value.header.account_id]);
 
     dest->balance += request_value.transfer.amount;
     source->balance -= request_value.transfer.amount;
 
     reply->value.transfer.balance = source->balance;
 
-    pthread_mutex_unlock(&account_mutex[request_value.transfer.account_id]);
-    pthread_mutex_unlock(&account_mutex[request_value.header.account_id]);
+    pthread_mutex_unlock(&account_mutex[first_lock_id]);
+    pthread_mutex_unlock(&account_mutex[second_lock_id]);
 
     reply->value.header.account_id = request_value.header.account_id;
     reply->value.header.ret_code = RC_OK;

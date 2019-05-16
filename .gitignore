@@ -54,5 +54,10 @@ dkms.conf
 # VS Code
 .vscode/
 
-# Program Name
+# Others
 forensic
+server
+user
+slog.txt
+ulog.txt
+build/

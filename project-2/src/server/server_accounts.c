@@ -39,7 +39,7 @@ int insertBankAccount(bank_account_t newAccount, uint32_t delay,uint32_t officeI
     pthread_mutex_lock(&account_mutex[newAccount.account_id]);
 
     logDelay(getLogfile(),officeID,delay);
-    usleep(delay);
+    usleep(MS_TO_US(delay));
 
     if (existsBankAccount(newAccount.account_id))
     {

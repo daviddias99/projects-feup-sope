@@ -1,7 +1,6 @@
 #include "server_bank_office.h"
 #include <semaphore.h>
 
-
 int request_fifo_fd;
 int request_fifo_fd_DUMMY;
 
@@ -33,8 +32,8 @@ int createBankOffices(unsigned int quantity)
 }
 
 void *bank_office_service_routine(void *officePtr)
-{   
-    bank_office_t * office = (bank_office_t *) officePtr;
+{
+    bank_office_t *office = (bank_office_t *)officePtr;
     logBankOfficeOpen(getLogfile(), office->id, office->tid);
 
     int semValue;
@@ -47,7 +46,7 @@ void *bank_office_service_routine(void *officePtr)
 
         sem_wait(&full);
 
-        logSyncMech(getLogfile(),MAIN_THREAD_ID,SYNC_OP_MUTEX_LOCK,SYNC_ROLE_CONSUMER,0);
+        logSyncMech(getLogfile(), MAIN_THREAD_ID, SYNC_OP_MUTEX_LOCK, SYNC_ROLE_CONSUMER, 0);
         pthread_mutex_lock(&request_queue_mutex);
 
         tlv_request_t currentRequest = queue_pop(&requests);
@@ -55,37 +54,35 @@ void *bank_office_service_routine(void *officePtr)
         logRequest(getLogfile(), pthread_self(), &currentRequest);
 
         pthread_mutex_unlock(&request_queue_mutex);
-        logSyncMech(getLogfile(),MAIN_THREAD_ID,SYNC_OP_MUTEX_UNLOCK,SYNC_ROLE_CONSUMER,currentRequest.value.header.pid);
-        
+        logSyncMech(getLogfile(), MAIN_THREAD_ID, SYNC_OP_MUTEX_UNLOCK, SYNC_ROLE_CONSUMER, currentRequest.value.header.pid);
+
         sem_post(&empty);
 
         sem_getvalue(&empty, &semValue);
         logSyncMechSem(getLogfile(), pthread_self(), SYNC_OP_SEM_POST, SYNC_ROLE_CONSUMER, office->id, semValue);
 
-        handleRequest(currentRequest,office->id);
+        handleRequest(currentRequest, office->id);
 
-        logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_LOCK,SYNC_ROLE_SHUTDOWN,currentRequest.value.header.pid);
+        logSyncMech(getLogfile(), office->id, SYNC_OP_MUTEX_LOCK, SYNC_ROLE_SHUTDOWN, currentRequest.value.header.pid);
         pthread_mutex_lock(&shutdown_mutex);
 
-    
-        if(shutdown){
+        if (shutdown)
+        {
 
-            sem_getvalue(&full,&semValue);
+            sem_getvalue(&full, &semValue);
 
-            if(semValue == 0){
-                
+            if (semValue == 0)
+            {
+
                 pthread_mutex_unlock(&shutdown_mutex);
-                logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_UNLOCK,SYNC_ROLE_SHUTDOWN,currentRequest.value.header.pid);
+                logSyncMech(getLogfile(), office->id, SYNC_OP_MUTEX_UNLOCK, SYNC_ROLE_SHUTDOWN, currentRequest.value.header.pid);
                 break;
             }
-    
         }
 
         pthread_mutex_unlock(&shutdown_mutex);
-        logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_UNLOCK,SYNC_ROLE_SHUTDOWN,currentRequest.value.header.pid);
-
+        logSyncMech(getLogfile(), office->id, SYNC_OP_MUTEX_UNLOCK, SYNC_ROLE_SHUTDOWN, currentRequest.value.header.pid);
     }
-
 
     return officePtr;
 }
@@ -118,31 +115,30 @@ bool passwordIsCorrect(bank_account_t account, char *pwd)
         return false;
 }
 
-int getActiveThreadCount(){
+int getActiveThreadCount()
+{
 
-    int active_thread_cnt, full_value,empty_value;  
+    int active_thread_cnt, full_value, empty_value;
 
-    sem_getvalue(&full,&full_value);
-    sem_getvalue(&empty,&empty_value);
+    sem_getvalue(&full, &full_value);
+    sem_getvalue(&empty, &empty_value);
 
     active_thread_cnt = thread_cnt - full_value - empty_value;
 
     return active_thread_cnt;
 }
 
-int handleRequest(tlv_request_t request,uint32_t officeID)
+int handleRequest(tlv_request_t request, uint32_t officeID)
 {
     enum op_type type = request.type;
     req_header_t header = request.value.header;
-
 
     tlv_reply_t reply;
     reply.length = sizeof(tlv_reply_t);
     reply.value.header.account_id = request.value.header.account_id;
     reply.type = type;
-    
-    int headerCheckStatus = checkRequestHeader(header);
 
+    int headerCheckStatus = checkRequestHeader(header);
 
     if (headerCheckStatus != 0)
     {
@@ -151,38 +147,38 @@ int handleRequest(tlv_request_t request,uint32_t officeID)
             reply.value.header.ret_code = RC_ID_NOT_FOUND;
         }
 
-        if (headerCheckStatus == -2){
+        if (headerCheckStatus == -2)
+        {
 
             reply.value.header.ret_code = RC_LOGIN_FAIL;
         }
-            
     }
     else
     {
         switch (type)
         {
         case OP_CREATE_ACCOUNT:
-            op_createAccount(request.value, &reply,officeID);
+            op_createAccount(request.value, &reply, officeID);
 
             break;
 
         case OP_BALANCE:
 
-            op_checkBalance(request.value, &reply,officeID);
+            op_checkBalance(request.value, &reply, officeID);
 
             break;
 
         case OP_TRANSFER:
 
-            op_transfer(request.value, &reply,officeID);
+            op_transfer(request.value, &reply, officeID);
 
             break;
 
         case OP_SHUTDOWN:
 
-            op_shutdown(request.value,&reply,officeID);
-            logDelay(getLogfile(),officeID,request.value.header.op_delay_ms);
-            usleep(request.value.header.op_delay_ms);
+            op_shutdown(request.value, &reply, officeID);
+            logDelay(getLogfile(), officeID, request.value.header.op_delay_ms);
+            usleep(MS_TO_US(request.value.header.op_delay_ms));
             shutdown_server();
             reply.value.shutdown.active_offices = getActiveThreadCount();
 
@@ -194,7 +190,6 @@ int handleRequest(tlv_request_t request,uint32_t officeID)
     }
 
     sendReply(request, reply);
-
 
     return 0;
 }
@@ -244,10 +239,11 @@ int waitForRequests()
 
         int nRead = read(request_fifo_fd, &received_request, sizeof(tlv_request_t));
 
-        if(nRead == 0){
+        if (nRead == 0)
+        {
 
             isEOF = true;
-            break;      // mudar isto
+            break; // mudar isto
         }
 
         logRequest(getLogfile(), pthread_self(), &received_request);
@@ -255,13 +251,13 @@ int waitForRequests()
         logSyncMechSem(getLogfile(), pthread_self(), SYNC_OP_SEM_WAIT, SYNC_ROLE_PRODUCER, MAIN_THREAD_ID, semValue);
         sem_wait(&empty);
 
-        logSyncMech(getLogfile(),MAIN_THREAD_ID,SYNC_OP_MUTEX_LOCK,SYNC_ROLE_PRODUCER,received_request.value.header.pid);
+        logSyncMech(getLogfile(), MAIN_THREAD_ID, SYNC_OP_MUTEX_LOCK, SYNC_ROLE_PRODUCER, received_request.value.header.pid);
         pthread_mutex_lock(&request_queue_mutex);
 
         queue_push(&requests, received_request);
 
         pthread_mutex_unlock(&request_queue_mutex);
-        logSyncMech(getLogfile(),MAIN_THREAD_ID,SYNC_OP_MUTEX_UNLOCK,SYNC_ROLE_PRODUCER,received_request.value.header.pid);
+        logSyncMech(getLogfile(), MAIN_THREAD_ID, SYNC_OP_MUTEX_UNLOCK, SYNC_ROLE_PRODUCER, received_request.value.header.pid);
 
         sem_post(&full);
         sem_getvalue(&full, &semValue);
@@ -273,15 +269,12 @@ int waitForRequests()
     return 0;
 }
 
-
-int shutdown_server(){
-
+int shutdown_server()
+{
     shutdown = true;
-    fchmod(request_fifo_fd,S_IRUSR | S_IRGRP | S_IROTH);
+    fchmod(request_fifo_fd, S_IRUSR | S_IRGRP | S_IROTH);
     close(request_fifo_fd);
     close(request_fifo_fd_DUMMY);
 
     return 0;
 }
-
-
