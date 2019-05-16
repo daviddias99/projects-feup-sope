@@ -12,11 +12,11 @@ sem_t full;
 pthread_mutex_t request_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t log_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
-bank_office_t offices[MAX_BANK_OFFICES];
 int thread_cnt;
 
 int createBankOffices(unsigned int quantity)
 {
+    bank_office_t offices[MAX_BANK_OFFICES];
 
     offices[0].id = MAIN_THREAD_ID;
     offices[0].tid = pthread_self();
@@ -26,23 +26,24 @@ int createBankOffices(unsigned int quantity)
     for (unsigned int i = 1; i <= quantity; i++)
     {
         offices[i].id = i;
-        pthread_create(&offices[i].tid, NULL, bank_office_service_routine, (void *)&offices[i].id);
-        logBankOfficeOpen(getLogfile(), i, offices[i].tid);
+        pthread_create(&offices[i].tid, NULL, bank_office_service_routine, (void *)&offices[i]);
     }
 
     return 0;
 }
 
-void *bank_office_service_routine(void *officeIDPtr)
-{
-    uint32_t officeID = *((uint32_t *)officeIDPtr);
+void *bank_office_service_routine(void *officePtr)
+{   
+    bank_office_t * office = (bank_office_t *) officePtr;
+    logBankOfficeOpen(getLogfile(), office->id, office->tid);
+
     int semValue;
 
     while (true)
     {
 
         sem_getvalue(&full, &semValue);
-        logSyncMechSem(getLogfile(), pthread_self(), SYNC_OP_SEM_WAIT, SYNC_ROLE_CONSUMER, officeID, semValue);
+        logSyncMechSem(getLogfile(), pthread_self(), SYNC_OP_SEM_WAIT, SYNC_ROLE_CONSUMER, office->id, semValue);
 
         sem_wait(&full);
 
@@ -59,9 +60,9 @@ void *bank_office_service_routine(void *officeIDPtr)
         sem_post(&empty);
 
         sem_getvalue(&empty, &semValue);
-        logSyncMechSem(getLogfile(), pthread_self(), SYNC_OP_SEM_POST, SYNC_ROLE_CONSUMER, officeID, semValue);
+        logSyncMechSem(getLogfile(), pthread_self(), SYNC_OP_SEM_POST, SYNC_ROLE_CONSUMER, office->id, semValue);
 
-        handleRequest(currentRequest,officeID);
+        handleRequest(currentRequest,office->id);
 
         pthread_mutex_lock(&shutdown_mutex);
 
@@ -84,7 +85,7 @@ void *bank_office_service_routine(void *officeIDPtr)
     }
 
 
-    return officeIDPtr;
+    return officePtr;
 }
 
 int checkRequestHeader(req_header_t header)
