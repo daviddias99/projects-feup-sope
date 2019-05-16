@@ -11,7 +11,10 @@ sem_t full;
 pthread_mutex_t request_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t log_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
-int thread_cnt;
+pthread_mutex_t thread_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+int total_thread_cnt;
+int active_thread_cnt;
 
 int createBankOffices(unsigned int quantity)
 {
@@ -20,7 +23,8 @@ int createBankOffices(unsigned int quantity)
     offices[0].id = MAIN_THREAD_ID;
     offices[0].tid = pthread_self();
     shutdown = false;
-    thread_cnt = quantity;
+    total_thread_cnt = quantity;
+    active_thread_cnt = 0;
 
     for (unsigned int i = 1; i <= quantity; i++)
     {
@@ -45,6 +49,11 @@ void *bank_office_service_routine(void *officePtr)
         logSyncMechSem(getLogfile(), pthread_self(), SYNC_OP_SEM_WAIT, SYNC_ROLE_CONSUMER, office->id, semValue);
 
         sem_wait(&full);
+
+
+        pthread_mutex_lock(&thread_cnt_mutex);
+        active_thread_cnt++;
+        pthread_mutex_unlock(&thread_cnt_mutex);
 
         logSyncMech(getLogfile(), MAIN_THREAD_ID, SYNC_OP_MUTEX_LOCK, SYNC_ROLE_CONSUMER, 0);
         pthread_mutex_lock(&request_queue_mutex);
@@ -82,6 +91,11 @@ void *bank_office_service_routine(void *officePtr)
 
         pthread_mutex_unlock(&shutdown_mutex);
         logSyncMech(getLogfile(), office->id, SYNC_OP_MUTEX_UNLOCK, SYNC_ROLE_SHUTDOWN, currentRequest.value.header.pid);
+
+        pthread_mutex_lock(&thread_cnt_mutex);
+        active_thread_cnt--;
+        pthread_mutex_unlock(&thread_cnt_mutex);
+
     }
 
     return officePtr;
@@ -117,14 +131,6 @@ bool passwordIsCorrect(bank_account_t account, char *pwd)
 
 int getActiveThreadCount()
 {
-
-    int active_thread_cnt, full_value, empty_value;
-
-    sem_getvalue(&full, &full_value);
-    sem_getvalue(&empty, &empty_value);
-
-    active_thread_cnt = thread_cnt - full_value - empty_value;
-
     return active_thread_cnt;
 }
 
