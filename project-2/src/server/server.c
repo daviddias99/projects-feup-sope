@@ -43,5 +43,7 @@ int main(int argc, char* argv[]){
 
     waitForRequests();
 
+    print_location();
+
     return 0;
 }
