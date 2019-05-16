@@ -202,14 +202,12 @@ int sendReply(tlv_request_t request, tlv_reply_t reply)
     sprintf(user_id, "%05d", request.value.header.pid);
     strcat(reply_fifo_name, user_id);
 
+    logReply(getLogfile(), pthread_self(), &reply);
+
     int reply_fifo_fd = open(reply_fifo_name, O_WRONLY);
 
     if (reply_fifo_fd == -1)
-    {
         return -1;
-    }
-
-    logReply(getLogfile(), pthread_self(), &reply);
 
     write(reply_fifo_fd, &reply, sizeof(tlv_reply_t));
     close(reply_fifo_fd);
