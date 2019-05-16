@@ -107,7 +107,7 @@ int generateSHA256sum(char *str, char *result)
     close(fd1[READ]);
 
     result[SHA256_SIZE] = '\0';
-    wait(PID);
+    wait(NULL);
 
     return 0;
 }

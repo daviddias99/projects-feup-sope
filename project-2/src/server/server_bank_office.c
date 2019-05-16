@@ -50,7 +50,6 @@ void *bank_office_service_routine(void *officePtr)
 
         sem_wait(&full);
 
-
         pthread_mutex_lock(&thread_cnt_mutex);
         active_thread_cnt++;
         pthread_mutex_unlock(&thread_cnt_mutex);
@@ -95,20 +94,28 @@ void *bank_office_service_routine(void *officePtr)
         pthread_mutex_lock(&thread_cnt_mutex);
         active_thread_cnt--;
         pthread_mutex_unlock(&thread_cnt_mutex);
-
     }
 
     return officePtr;
 }
 
-int checkRequestHeader(req_header_t header)
+int checkRequestHeader(tlv_request_t req)
 {
 
-    if (!existsBankAccount(header.account_id))
+    if (!existsBankAccount(req.value.header.account_id))
         return -1;
 
-    if (!passwordIsCorrect(*findBankAccount(header.account_id), header.password))
+    if (((req.type == OP_CREATE_ACCOUNT) && (req.value.header.account_id != ADMIN_ACCOUNT_ID)) ||
+        ((req.type == OP_BALANCE) && (req.value.header.account_id == ADMIN_ACCOUNT_ID)) ||
+        ((req.type == OP_TRANSFER) && (req.value.header.account_id == ADMIN_ACCOUNT_ID || req.value.transfer.account_id == ADMIN_ACCOUNT_ID)) ||
+        ((req.type == OP_SHUTDOWN) && (req.value.header.account_id != ADMIN_ACCOUNT_ID)))
+    {
+
         return -2;
+    }
+
+    if (!passwordIsCorrect(*findBankAccount(req.value.header.account_id), req.value.header.password))
+        return -3;
 
     return 0;
 }
@@ -137,26 +144,28 @@ int getActiveThreadCount()
 int handleRequest(tlv_request_t request, uint32_t officeID)
 {
     enum op_type type = request.type;
-    req_header_t header = request.value.header;
 
     tlv_reply_t reply;
     reply.length = sizeof(tlv_reply_t);
     reply.value.header.account_id = request.value.header.account_id;
     reply.type = type;
 
-    int headerCheckStatus = checkRequestHeader(header);
+    int headerCheckStatus = checkRequestHeader(request);
 
     if (headerCheckStatus != 0)
     {
+
         if (headerCheckStatus == -1)
         {
-            reply.value.header.ret_code = RC_ID_NOT_FOUND;
-        }
-
-        if (headerCheckStatus == -2)
-        {
-
             reply.value.header.ret_code = RC_LOGIN_FAIL;
+        }
+        else if (headerCheckStatus == -2)
+        {
+            reply.value.header.ret_code = RC_OP_NALLOW;
+        }
+        else if (headerCheckStatus == -3)
+        {
+            reply.value.header.ret_code = RC_ID_NOT_FOUND;
         }
     }
     else

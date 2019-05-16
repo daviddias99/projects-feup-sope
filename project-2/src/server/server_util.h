@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <wait.h>
 
 #include "../constants.h"
 

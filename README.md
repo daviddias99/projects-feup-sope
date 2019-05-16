@@ -4,8 +4,8 @@
 
 - [ ] 1. Implementar o tamanho variável das mensagens
 - [ ] 2. Verificar se as transferências dão ou não deadlocks
-- [ ] 3. Verificar unlinks
-- [ ] 4. Corrigir ordem das respostas dos erros
+- [x] 3. Verificar unlinks
+- [x] 4. Corrigir ordem das respostas dos erros
 - [ ] 5. Implementar secção crítica para o login
 - [ ] 6. Implementar secção crítica para as verificações
 - [x] 7. Contador de threads ativos
