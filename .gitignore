@@ -55,6 +55,7 @@ dkms.conf
 .vscode/
 
 # Others
+*.sh
 forensic
 server
 user

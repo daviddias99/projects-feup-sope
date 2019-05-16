@@ -6,6 +6,7 @@ pthread_mutex_t account_mutex[MAX_BANK_ACCOUNTS];
 
 bank_account_t createBankAccount(uint32_t id, char *password, uint32_t balance)
 {
+    // TODO: criar contas com id repetido está a responder OTHER em vez de RC_ID_IN_USE - checkar isto
     bank_account_t newBankAccount;
 
     newBankAccount.account_id = id;
@@ -29,24 +30,14 @@ bank_account_t createAdminBankAccount(char *password)
 
 int insertBankAccount(bank_account_t newAccount, uint32_t delay,uint32_t officeID)
 {
-
-    if (newAccount.account_id >= MAX_BANK_ACCOUNTS)
-    {
-        return -1;
-    }
+    if (existsBankAccount(newAccount.account_id)) 
+        return RC_ID_IN_USE;
 
     logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_LOCK,SYNC_ROLE_ACCOUNT,0);
     pthread_mutex_lock(&account_mutex[newAccount.account_id]);
 
     logDelay(getLogfile(),officeID,delay);
     usleep(MS_TO_US(delay));
-
-    if (existsBankAccount(newAccount.account_id))
-    {
-        pthread_mutex_unlock(&account_mutex[newAccount.account_id]);
-        logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_UNLOCK,SYNC_ROLE_ACCOUNT,0);
-        return -2;
-    }
 
     accounts[newAccount.account_id] = newAccount;
 
@@ -60,12 +51,17 @@ int insertBankAccount(bank_account_t newAccount, uint32_t delay,uint32_t officeI
 
 bool existsBankAccount(uint32_t id)
 {
-    if (id >= MAX_BANK_ACCOUNTS)
+    if (id >= MAX_BANK_ACCOUNTS) {
+        print_location();
         return false;
+    }
 
-    if (accounts[id].account_id != ERROR_ACCOUNT_ID)
+    if (accounts[id].account_id != ERROR_ACCOUNT_ID) {
+        print_location();
         return true;
+    }
 
+    print_location();
     return false;
 }
 

@@ -2,6 +2,7 @@
 #define SERVER_ACCOUNTS_H
 
 #include <string.h>
+#include "../debug.h"
 #include "../sope.h"
 #include "../constants.h"
 #include "server_util.h"

@@ -3,6 +3,7 @@
 
 #include "../sope.h"
 #include "../constants.h"
+#include "../debug.h"
 #include "server_accounts.h"
 
 int op_createAccount(req_value_t request_value, tlv_reply_t* reply, uint32_t officeID);

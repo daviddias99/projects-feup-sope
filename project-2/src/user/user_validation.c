@@ -113,9 +113,7 @@ int validAmount(char* value){
 int validArguments(user_command_t* command, char* arguments){
 
     command->arguments = arguments;
-
-    print_location();
-
+    
     switch(command->operation){
         case 0:
             return validCreationOperation(arguments);

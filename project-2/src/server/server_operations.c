@@ -17,11 +17,9 @@ int op_createAccount(req_value_t request_value, tlv_reply_t *reply,uint32_t offi
 
     bank_account_t newAccount = createBankAccount(request_value.create.account_id, request_value.create.password, request_value.create.balance);
 
-    if (insertBankAccount(newAccount,request_value.header.op_delay_ms,officeID) == ERROR_ACCOUNT_LIMIT_EXCEEDED)
+    if (insertBankAccount(newAccount,request_value.header.op_delay_ms,officeID) == RC_ID_IN_USE)
     {
-
-        reply->value.header.ret_code = RC_OTHER;
-
+        reply->value.header.ret_code = RC_ID_IN_USE;
         return -2;
     }
 

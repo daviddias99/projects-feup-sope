@@ -90,6 +90,7 @@ int generateSHA256sum(char *str, char *result)
         return 2;
     }
 
+    // TODO: wait pelo processo filho para n deixar zombies
     pid_t PID = fork();
 
     if (PID == 0)
