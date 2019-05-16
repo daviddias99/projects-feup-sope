@@ -47,6 +47,7 @@ typedef enum sync_mech_role {
   SYNC_ROLE_PRODUCER,    // producer (main thread)
   SYNC_ROLE_CONSUMER,    // consumer (bank office threads)
   SYNC_ROLE_ACCOUNT,     // account related
+  SYNC_ROLE_SHUTDOWN,     // account related
   __SYNC_ROLE_MAX_NUMBER // enables to determine how many sync roles are defined
 } sync_role_t;
 

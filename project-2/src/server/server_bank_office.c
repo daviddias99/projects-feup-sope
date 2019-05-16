@@ -64,6 +64,7 @@ void *bank_office_service_routine(void *officePtr)
 
         handleRequest(currentRequest,office->id);
 
+        logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_LOCK,SYNC_ROLE_SHUTDOWN,currentRequest.value.header.pid);
         pthread_mutex_lock(&shutdown_mutex);
 
     
@@ -72,15 +73,16 @@ void *bank_office_service_routine(void *officePtr)
             sem_getvalue(&full,&semValue);
 
             if(semValue == 0){
-
+                
                 pthread_mutex_unlock(&shutdown_mutex);
+                logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_UNLOCK,SYNC_ROLE_SHUTDOWN,currentRequest.value.header.pid);
                 break;
             }
     
         }
 
-
         pthread_mutex_unlock(&shutdown_mutex);
+        logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_UNLOCK,SYNC_ROLE_SHUTDOWN,currentRequest.value.header.pid);
 
     }
 
@@ -140,6 +142,7 @@ int handleRequest(tlv_request_t request,uint32_t officeID)
     reply.type = type;
     
     int headerCheckStatus = checkRequestHeader(header);
+
 
     if (headerCheckStatus != 0)
     {
@@ -274,7 +277,6 @@ int waitForRequests()
 int shutdown_server(){
 
     shutdown = true;
-    umask(0);
     fchmod(request_fifo_fd,S_IRUSR | S_IRGRP | S_IROTH);
     close(request_fifo_fd);
     close(request_fifo_fd_DUMMY);

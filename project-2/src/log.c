@@ -44,7 +44,8 @@ static const char *SYNC_MECH_STR[] = {
 static const char *SYNC_ROLE_STR[] = {
   [SYNC_ROLE_ACCOUNT] = "ACCOUNT",
   [SYNC_ROLE_CONSUMER] = "CONSUMER",
-  [SYNC_ROLE_PRODUCER] = "PRODUCER"};
+  [SYNC_ROLE_PRODUCER] = "PRODUCER",
+  [SYNC_ROLE_SHUTDOWN] = "SHUTDOWN"};
 
 static int atomicPrintf(int fd, const char *format, ...);
 
