@@ -75,7 +75,6 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 
     pthread_mutex_lock(&account_mutex[first_lock_id]);
     logSyncDelay(getLogfile(), officeID, first_lock_id, request_value.header.op_delay_ms);
-    usleep(MS_TO_US(request_value.header.op_delay_ms));
 
     pthread_mutex_lock(&account_mutex[second_lock_id]);
     logSyncDelay(getLogfile(), officeID, second_lock_id, request_value.header.op_delay_ms);
