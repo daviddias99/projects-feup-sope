@@ -280,9 +280,6 @@ int waitForRequests()
         logSyncMechSem(getLogfile(), MAIN_THREAD_ID, SYNC_OP_SEM_POST, SYNC_ROLE_PRODUCER,received_request.value.header.pid , semValue);
     }
 
-    close(request_fifo_fd);
-    unlink(SERVER_FIFO_PATH);
-
     return 0;
 }
 
@@ -307,4 +304,14 @@ int closeOffices(){
     }
 
     return 0;
+}
+
+void closeCommunication() {
+
+    close(request_fifo_fd);
+    unlink(SERVER_FIFO_PATH);
+
+    print_location();
+
+    return;
 }

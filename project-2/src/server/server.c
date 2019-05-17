@@ -30,7 +30,22 @@ void printSizes(){
 */
 }
 
+void sigint_handler(int signo) {
+    UNUSED(signo);
+    exit(0);
+}
+
+
 int main(int argc, char* argv[]){
+
+    struct sigaction action;
+
+    action.sa_handler = sigint_handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+
+    sigaction(SIGINT, &action, NULL);
+    sigaction(SIGTERM, &action, NULL);
 
     if(argc != 3){
 
@@ -50,8 +65,8 @@ int main(int argc, char* argv[]){
         exit(-2);
     }
 
-    printSizes();
-
+    
+    atexit(closeCommunication);
     openLogFile();
 
     initSyncMechanisms((size_t)bankOfficeCount);
