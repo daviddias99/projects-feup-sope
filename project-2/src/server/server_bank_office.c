@@ -12,13 +12,14 @@ pthread_mutex_t request_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t log_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t thread_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+bank_office_t offices[MAX_BANK_OFFICES];
 
 int total_thread_cnt;
 int active_thread_cnt;
 
 int createBankOffices(unsigned int quantity)
 {
-    bank_office_t offices[MAX_BANK_OFFICES];
+
 
     offices[0].id = MAIN_THREAD_ID;
     offices[0].tid = pthread_self();
@@ -254,7 +255,7 @@ int waitForRequests()
         if (nRead == 0)
         {   
             isEOF = true;
-            break; // mudar isto
+            break; 
         }
 
         logRequest(getLogfile(),MAIN_THREAD_ID, &received_request);
@@ -286,6 +287,20 @@ int shutdown_server()
     shutdown = true;
     fchmod(request_fifo_fd, S_IRUSR | S_IRGRP | S_IROTH);
     close(request_fifo_fd_DUMMY);
+
+    return 0;
+}
+
+
+int closeOffices(){
+    
+    for(int i = 1; i <= total_thread_cnt;i++){
+
+        pthread_cancel(offices[i].tid);
+
+        logBankOfficeClose(getLogfile(),offices[i].id,offices[i].tid);
+
+    }
 
     return 0;
 }

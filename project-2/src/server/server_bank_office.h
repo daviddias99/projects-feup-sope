@@ -44,5 +44,6 @@ bool passwordIsCorrect(bank_account_t account,char* pwd);
 
 int shutdown_server();
 int getActiveThreadCount();
+int closeOffices();
 
 #endif

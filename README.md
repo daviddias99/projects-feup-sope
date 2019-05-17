@@ -2,7 +2,7 @@
 
 ### TODO
 
-- [ ] 1. Implementar o tamanho variável das mensagens
+- [x] 1. Implementar o tamanho variável das mensagens
 - [ ] 2. Verificar se as transferências dão ou não deadlocks
 - [x] 3. Verificar unlinks
 - [x] 4. Corrigir ordem das respostas dos erros
@@ -17,7 +17,7 @@
     - [x] server_sync
     - [x] server_util
     - [ ] server
-- [ ] 10. Corrigir shutdown
-- [ ] 11. Close dos offices
+- [x] 10. Corrigir shutdown
+- [x] 11. Close dos offices
 
      
