@@ -1,3 +1,4 @@
+
 #include "user_util.h"
 
 int request_fifo_fd;
@@ -30,14 +31,13 @@ static const char *ERROR_MESSAGES[] = {
 
 void alarm_handler(int signo)
 {
-
     UNUSED(signo);
 
     recordError(SRV_TIMEOUT);
 
     closeComunication();
 
-    raise(SIGKILL); // Ends the program
+    exit(7);
 }
 
 void printErrorMessage(int error)
@@ -256,7 +256,7 @@ int formatRequest(tlv_request_t *request)
     int op_type = command.operation;
 
     request->type = op_type;
-    request->length = sizeof(tlv_request_t);
+    request->length = sizeof(request_value);
     request->value = request_value;
 
     return 0;
@@ -264,7 +264,27 @@ int formatRequest(tlv_request_t *request)
 
 int sendRequest(tlv_request_t *request)
 {
-    write(request_fifo_fd, request, request->length);
+    write(request_fifo_fd, request, sizeof(op_type_t) + sizeof(uint32_t) + request->length);
+
+    return 0;
+}
+
+int readReply(tlv_reply_t *reply){
+
+    if(read(response_fifo_fd, &(reply->type), sizeof(op_type_t)) < 0){
+        perror("Reply (operation type)");
+        return 1;
+    }
+
+    if(read(response_fifo_fd, &(reply->length), sizeof(uint32_t)) < 0){
+        perror("Reply (length)");
+        return 2;
+    }
+
+    if(read(response_fifo_fd, &(reply->value), reply->length) < 0){
+        perror("Reply (value)");
+        return 3;
+    }
 
     return 0;
 }
@@ -340,13 +360,13 @@ int formatRepValue(rep_value_t *reply_value, int ret_code)
 
 int formatReply(tlv_reply_t *reply, int ret_code)
 {
-    rep_value_t value;
+    rep_value_t reply_value;
 
-    formatRepValue(&value, ret_code);
+    formatRepValue(&reply_value, ret_code);
 
     reply->type = command.operation;
-    reply->length = sizeof(tlv_reply_t);
-    reply->value = value;
+    reply->length = sizeof(reply_value);
+    reply->value = reply_value;
 
     return 0;
 }
@@ -382,7 +402,7 @@ int waitResponse(tlv_request_t *request, tlv_reply_t *reply)
 
     alarm(FIFO_TIMEOUT_SECS);
 
-    read(response_fifo_fd, reply, sizeof(tlv_reply_t)); // Not sure if size is in the correct way to do it
+    readReply(reply);
 
     alarm(CANCEL_ALARM);
 

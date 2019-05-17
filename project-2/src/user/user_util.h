@@ -47,6 +47,8 @@ int formatRequest(tlv_request_t* request);
 
 int sendRequest(tlv_request_t* request);
 
+int readReply(tlv_reply_t *reply);
+
 int formatRepBalanceAccount(rep_value_t* reply_value);
 
 int formatRepTransfer(rep_value_t* reply_value);
