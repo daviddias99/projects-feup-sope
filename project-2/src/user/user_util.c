@@ -146,13 +146,14 @@ int recordOperation(tlv_request_t *request, tlv_reply_t *reply)
 
     if ((fd = open(USER_LOGFILE, O_WRONLY | O_APPEND)) == -1)
     {
-        perror("User Logfile.");
+        perror("User Logfile");
         return 1;
     }
 
     if (logRequest(fd, pid, request) < 0)
     {
         printf("Error: %s\n", ERROR_MESSAGES[LOG_REQUEST_ERROR]);
+        close(fd);
         return 2;
     }
 
@@ -174,7 +175,14 @@ int recordOperation(tlv_request_t *request, tlv_reply_t *reply)
     if (logReply(fd, pid, reply) < 0)
     {
         printf("Error: %s\n", ERROR_MESSAGES[LOG_REPLY_ERROR]);
+        close(fd);
         return 3;
+    }
+    
+    if (close(fd) == -1)
+    {
+        perror("User Logfile");
+        return 4;
     }
 
     return 0;
