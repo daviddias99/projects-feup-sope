@@ -14,7 +14,7 @@
     - [ ] server_accounts
     - [ ] server_bank_office
     - [ ] server_operations
-    - [ ] server_sync
-    - [ ] server_util
+    - [x] server_sync
+    - [x] server_util
     - [ ] server
      
