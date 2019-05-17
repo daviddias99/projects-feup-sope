@@ -69,6 +69,8 @@ void *bank_office_service_routine(void *officePtr)
         sem_getvalue(&empty, &semValue);
         logSyncMechSem(getLogfile(),  office->id, SYNC_OP_SEM_POST, SYNC_ROLE_CONSUMER,currentRequest.value.header.pid, semValue);
 
+
+        
         handleRequest(currentRequest, office->id);
 
         logSyncMech(getLogfile(), office->id, SYNC_OP_MUTEX_LOCK, SYNC_ROLE_SHUTDOWN, currentRequest.value.header.pid);
@@ -142,7 +144,9 @@ int getActiveThreadCount()
 }
 
 int handleRequest(tlv_request_t request, uint32_t officeID)
-{
+{   
+    print_dbg("office id %d\n\n", officeID);
+
     enum op_type type = request.type;
 
     tlv_reply_t reply;
@@ -202,12 +206,12 @@ int handleRequest(tlv_request_t request, uint32_t officeID)
         }
     }
 
-    sendReply(request, reply);
+    sendReply(request, reply, officeID);
 
     return 0;
 }
 
-int sendReply(tlv_request_t request, tlv_reply_t reply)
+int sendReply(tlv_request_t request, tlv_reply_t reply, uint32_t officeID)
 {
 
     char user_id[WIDTH_ID + 1];
@@ -215,7 +219,7 @@ int sendReply(tlv_request_t request, tlv_reply_t reply)
     sprintf(user_id, "%05d", request.value.header.pid);
     strcat(reply_fifo_name, user_id);
 
-    logReply(getLogfile(), pthread_self(), &reply);
+    logReply(getLogfile(), officeID, &reply);
 
     int reply_fifo_fd = open(reply_fifo_name, O_WRONLY);
     if (reply_fifo_fd == -1)
