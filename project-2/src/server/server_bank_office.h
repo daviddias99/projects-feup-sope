@@ -36,7 +36,7 @@ void *bank_office_service_routine(void *officeIDPtr);
 
 int waitForRequests();
 int setupRequestFIFO();
-int sendReply(tlv_request_t request, tlv_reply_t reply);
+int sendReply(tlv_request_t request, tlv_reply_t reply, uint32_t officeID);
 
 int handleRequest(tlv_request_t request,uint32_t officeID);
 int checkRequestHeader(tlv_request_t req);
