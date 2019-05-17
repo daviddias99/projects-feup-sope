@@ -11,7 +11,7 @@
 - [x] 7. Contador de threads ativos
 - [ ] 8. Verificar logging 
 - [ ] 9. Error checking de todas as funções de sistema e afins
-    - [ ] server_accounts
+    - [x] server_accounts
     - [ ] server_bank_office
     - [ ] server_operations
     - [x] server_sync
