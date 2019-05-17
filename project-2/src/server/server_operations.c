@@ -37,7 +37,7 @@ int op_checkBalance(req_value_t request_value, tlv_reply_t *reply,uint32_t offic
 
     pthread_mutex_lock(&account_mutex[reply->value.header.account_id]);
 
-    logDelay(getLogfile(),officeID,header.op_delay_ms);
+    logSyncDelay(getLogfile(),officeID, account.account_id, header.op_delay_ms);
     usleep(MS_TO_US(header.op_delay_ms));
     reply->value.balance.balance = account.balance;
 
@@ -56,18 +56,9 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 
     reply->type = OP_TRANSFER;
     reply->length = sizeof(rep_header_t) + sizeof(rep_transfer_t);
-    reply->value.transfer.balance = request_value.transfer.amount;
-
-    if (!existsBankAccount(request_value.transfer.account_id))
-    {
-        reply->value.header.ret_code = RC_ID_NOT_FOUND;
-
-        return -3;
-    }
-
+    
     dest = findBankAccount(request_value.transfer.account_id);
     source = findBankAccount(request_value.header.account_id);
-
 
     // TODO: TESTAR DEADLOCK
     uint32_t first_lock_id, second_lock_id;
@@ -83,37 +74,32 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 
 
     pthread_mutex_lock(&account_mutex[first_lock_id]);
-    logDelay(getLogfile(), officeID, request_value.header.op_delay_ms);
+    logSyncDelay(getLogfile(), officeID, first_lock_id, request_value.header.op_delay_ms);
     usleep(MS_TO_US(request_value.header.op_delay_ms));
 
     pthread_mutex_lock(&account_mutex[second_lock_id]);
-    logDelay(getLogfile(), officeID, request_value.header.op_delay_ms);
+    logSyncDelay(getLogfile(), officeID, second_lock_id, request_value.header.op_delay_ms);
     usleep(MS_TO_US(request_value.header.op_delay_ms));
 
-    if (source->balance < request_value.transfer.amount)
-    {
+    if (!existsBankAccount(request_value.transfer.account_id))
+        reply->value.header.ret_code = RC_ID_NOT_FOUND;
+    else if (source->balance < request_value.transfer.amount)
         reply->value.header.ret_code = RC_NO_FUNDS;
-
-        return -3;
-    }
-
-    if (dest->balance + request_value.transfer.amount > MAX_BALANCE)
-    {
+    else if (dest->balance + request_value.transfer.amount > MAX_BALANCE)
         reply->value.header.ret_code = RC_TOO_HIGH;
-
-        return -4;
+    else {    
+        dest->balance += request_value.transfer.amount;
+        source->balance -= request_value.transfer.amount;
+    
+        reply->value.header.ret_code = RC_OK;
     }
-
-    dest->balance += request_value.transfer.amount;
-    source->balance -= request_value.transfer.amount;
 
     reply->value.transfer.balance = source->balance;
-
+    
     pthread_mutex_unlock(&account_mutex[first_lock_id]);
     pthread_mutex_unlock(&account_mutex[second_lock_id]);
 
     reply->value.header.account_id = request_value.header.account_id;
-    reply->value.header.ret_code = RC_OK;
 
     return 0;
 }
