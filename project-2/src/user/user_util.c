@@ -273,21 +273,18 @@ int formatRequest(tlv_request_t *request)
     request->type = op_type;
     request->length = sizeof(req_header_t);
 
-    switch ( request->type)
-    {
-    
-    case OP_CREATE_ACCOUNT:
-        request->length += sizeof(req_create_account_t);
-        break;
+    switch (request->type){
+        case OP_CREATE_ACCOUNT:
+            request->length += sizeof(req_create_account_t);
+            break;
 
-    case OP_TRANSFER:
-        request->length += sizeof(req_transfer_t);
-        break;
+        case OP_TRANSFER:
+            request->length += sizeof(req_transfer_t);
+            break;
 
-    default:
-        break;
+        default:
+            break;
     }
-
     
     request->value = request_value;
 
@@ -397,7 +394,22 @@ int formatReply(tlv_reply_t *reply, int ret_code)
     formatRepValue(&reply_value, ret_code);
 
     reply->type = command.operation;
-    reply->length = sizeof(reply_value);
+    reply->length = sizeof(rep_header_t);
+
+    switch(reply->type){
+        case OP_BALANCE:
+            reply->length += sizeof(rep_balance_t);
+            break;
+        case OP_TRANSFER:
+            reply->length += sizeof(rep_transfer_t);
+            break;
+        case OP_SHUTDOWN:
+            reply->length += sizeof(rep_shutdown_t);
+            break;
+        default:
+            break;
+    }
+
     reply->value = reply_value;
 
     return 0;
