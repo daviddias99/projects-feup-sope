@@ -17,4 +17,7 @@
     - [x] server_sync
     - [x] server_util
     - [ ] server
+- [ ] 10. Corrigir shutdown
+- [ ] 11. Close dos offices
+
      
