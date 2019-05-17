@@ -156,6 +156,19 @@ int recordOperation(tlv_request_t *request, tlv_reply_t *reply)
         return 2;
     }
 
+    if(reply->value.header.ret_code != RC_OK){
+
+        if(reply->type == OP_SHUTDOWN){
+
+            reply->value.shutdown.active_offices = 0;
+        }
+        else if(reply->type == OP_TRANSFER){
+
+            reply->value.transfer.balance  = request->value.transfer.amount;
+        }
+
+    }
+
     if (logReply(fd, pid, reply) < 0)
     {
         printf("Error: %s\n", ERROR_MESSAGES[LOG_REPLY_ERROR]);
@@ -256,7 +269,24 @@ int formatRequest(tlv_request_t *request)
     int op_type = command.operation;
 
     request->type = op_type;
-    request->length = sizeof(request_value);
+    request->length = sizeof(req_header_t);
+
+    switch ( request->type)
+    {
+    
+    case OP_CREATE_ACCOUNT:
+        request->length += sizeof(req_create_account_t);
+        break;
+
+    case OP_TRANSFER:
+        request->length += sizeof(req_transfer_t);
+        break;
+
+    default:
+        break;
+    }
+
+    
     request->value = request_value;
 
     return 0;
@@ -403,6 +433,7 @@ int waitResponse(tlv_request_t *request, tlv_reply_t *reply)
     alarm(FIFO_TIMEOUT_SECS);
 
     readReply(reply);
+
 
     alarm(CANCEL_ALARM);
 

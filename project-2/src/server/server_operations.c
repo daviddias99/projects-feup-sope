@@ -55,14 +55,8 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
     UNUSED(officeID);
 
     reply->type = OP_TRANSFER;
-    reply->length = sizeof(rep_header_t);
-
-    if (!existsBankAccount(request_value.transfer.account_id))
-    {
-        reply->value.header.ret_code = RC_ID_NOT_FOUND;
-
-        return -1;
-    }
+    reply->length = sizeof(rep_header_t) + sizeof(rep_transfer_t);
+    reply->value.transfer.balance = request_value.transfer.amount;
 
     if (!existsBankAccount(request_value.transfer.account_id))
     {
@@ -120,7 +114,6 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 
     reply->value.header.account_id = request_value.header.account_id;
     reply->value.header.ret_code = RC_OK;
-    reply->length += sizeof(rep_transfer_t);
 
     return 0;
 }
