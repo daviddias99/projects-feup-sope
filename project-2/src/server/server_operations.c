@@ -4,12 +4,15 @@ int op_createAccount(req_value_t request_value, tlv_reply_t *reply,uint32_t offi
 {
 
     reply->type = OP_CREATE_ACCOUNT;
+    reply->length = sizeof(rep_header_t);
+
 
     bank_account_t newAccount = createBankAccount(request_value.create.account_id, request_value.create.password, request_value.create.balance);
 
     if (insertBankAccount(newAccount,request_value.header.op_delay_ms,officeID) == RC_ID_IN_USE)
     {
         reply->value.header.ret_code = RC_ID_IN_USE;
+
         return -1;
     }
 
@@ -23,6 +26,7 @@ int op_checkBalance(req_value_t request_value, tlv_reply_t *reply,uint32_t offic
 {
 
     req_header_t header = request_value.header;
+    reply->length = sizeof(rep_header_t) + sizeof(rep_balance_t);
 
     reply->type = OP_BALANCE;
 
@@ -39,6 +43,8 @@ int op_checkBalance(req_value_t request_value, tlv_reply_t *reply,uint32_t offic
 
     pthread_mutex_unlock(&account_mutex[reply->value.header.account_id]);
 
+
+
     return 0;
 }
 
@@ -49,6 +55,7 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
     UNUSED(officeID);
 
     reply->type = OP_TRANSFER;
+    reply->length = sizeof(rep_header_t);
 
     if (!existsBankAccount(request_value.transfer.account_id))
     {
@@ -113,6 +120,7 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 
     reply->value.header.account_id = request_value.header.account_id;
     reply->value.header.ret_code = RC_OK;
+    reply->length += sizeof(rep_transfer_t);
 
     return 0;
 }
@@ -123,8 +131,8 @@ int op_shutdown(req_value_t request_value, tlv_reply_t* reply,uint32_t officeID)
     UNUSED(request_value);
 
     reply->type = OP_SHUTDOWN;
-
     reply->value.header.ret_code = RC_OK;
+    reply->length = sizeof(rep_header_t) + sizeof(rep_shutdown_t);
 
     return 0;
 }

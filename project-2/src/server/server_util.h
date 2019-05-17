@@ -10,6 +10,7 @@
 #include <wait.h>
 
 #include "../constants.h"
+#include "../types.h"
 
 int getLogfile();
 int openLogFile();

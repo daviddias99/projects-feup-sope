@@ -111,3 +111,5 @@ int generateSHA256sum(char *str, char *result)
 
     return 0;
 }
+
+

@@ -146,7 +146,6 @@ int handleRequest(tlv_request_t request, uint32_t officeID)
     enum op_type type = request.type;
 
     tlv_reply_t reply;
-    reply.length = sizeof(tlv_reply_t);
     reply.value.header.account_id = request.value.header.account_id;
     reply.type = type;
 
@@ -167,6 +166,8 @@ int handleRequest(tlv_request_t request, uint32_t officeID)
         {
             reply.value.header.ret_code = RC_ID_NOT_FOUND;
         }
+
+        reply.length = sizeof(rep_header_t);
     }
     else
     {
@@ -224,7 +225,7 @@ int sendReply(tlv_request_t request, tlv_reply_t reply)
     if (reply_fifo_fd == -1)
         return -1;
 
-    write(reply_fifo_fd, &reply, sizeof(tlv_reply_t));
+    write(reply_fifo_fd, &reply, sizeof(op_type_t) + sizeof(uint32_t) + reply.length);
     close(reply_fifo_fd);
 
     return 0;
@@ -242,7 +243,7 @@ int setupRequestFIFO()
 int waitForRequests()
 {
 
-    int semValue;
+    int semValue, nRead;
     bool isEOF = false;
 
     tlv_request_t received_request;
@@ -250,7 +251,9 @@ int waitForRequests()
     while (!shutdown || !isEOF)
     {
 
-        int nRead = read(request_fifo_fd, &received_request, sizeof(tlv_request_t));
+        nRead = read(request_fifo_fd, &received_request.type, sizeof(op_type_t));
+        nRead = read(request_fifo_fd, &received_request.length, sizeof(uint32_t));
+        nRead = read(request_fifo_fd, &received_request.value, sizeof(req_value_t));
 
         if (nRead == 0)
         {
