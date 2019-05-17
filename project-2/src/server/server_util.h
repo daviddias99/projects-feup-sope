@@ -7,8 +7,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <wait.h>
 
 #include "../constants.h"
+#include "../types.h"
 
 int getLogfile();
 int openLogFile();

@@ -39,7 +39,7 @@ int setupRequestFIFO();
 int sendReply(tlv_request_t request, tlv_reply_t reply);
 
 int handleRequest(tlv_request_t request,uint32_t officeID);
-int checkRequestHeader(req_header_t header);
+int checkRequestHeader(tlv_request_t req);
 bool passwordIsCorrect(bank_account_t account,char* pwd);
 
 int shutdown_server();

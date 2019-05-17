@@ -56,6 +56,12 @@ int openLogFile()
 {
     log_file_fd = open(SERVER_LOGFILE, O_WRONLY | O_APPEND, 0660);
 
+    if(log_file_fd == -1){
+
+        perror("Log file opening error");
+        return -1;
+    }
+
     return 0;
 }
 
@@ -68,10 +74,6 @@ int generateSalt(char *saltStr)
 
     return 0;
 }
-
-
-
-
 
 int generateSHA256sum(char *str, char *result)
 {
@@ -90,27 +92,80 @@ int generateSHA256sum(char *str, char *result)
         return 2;
     }
 
-    // TODO: wait pelo processo filho para n deixar zombies
     pid_t PID = fork();
 
     if (PID == 0)
     {
-        close(fd1[READ]);
-        close(fd2[WRITE]);
-        dup2(fd1[WRITE], STDOUT_FILENO);
-        dup2(fd2[READ], STDIN_FILENO);
+        if(close(fd1[READ]) != 0){
+
+            perror("SHA256 co-process error");
+            return -1;
+        }
+
+        if(close(fd2[WRITE])){
+
+            perror("SHA256 co-process error");
+            return -1;
+        }
+
+        if(dup2(fd1[WRITE], STDOUT_FILENO) == -1){
+
+            perror("SHA256 co-process error");
+            return -1;
+        }
+
+        if(dup2(fd2[READ], STDIN_FILENO)){
+
+            perror("SHA256 co-process error");
+            return -1;
+        }
+
         execlp("sha256sum", "sha256sum", NULL);
+
+        return -2;
     }
 
-    close(fd1[WRITE]);
-    close(fd2[READ]);
+    if (close(fd1[WRITE]) == -1){
 
-    write(fd2[WRITE], str, strlen(str));
-    close(fd2[WRITE]);
-    read(fd1[READ], result, SHA256_SIZE);
-    close(fd1[READ]);
+        perror("SHA256 co-process error");
+        return -1;
+    }
+
+    if (close(fd2[READ]) == -1){
+
+        perror("SHA256 co-process error");
+        return -1;
+    }
+
+    if(write(fd2[WRITE], str, strlen(str)) == -1){
+
+        perror("SHA256 co-process error");
+        return -1;
+    }
+
+    if (close(fd2[WRITE]) == -1){
+
+        perror("SHA256 co-process error");
+        return -1;
+    }
+
+    if(read(fd1[READ], result, SHA256_SIZE) == -1){
+
+        perror("SHA256 co-process error");
+        return -1;
+    }
+
+    if (close(fd1[READ]) == -1){
+
+        perror("SHA256 co-process error");
+        return -1;
+    }
 
     result[SHA256_SIZE] = '\0';
+    
+    wait(NULL);
 
     return 0;
 }
+
+

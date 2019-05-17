@@ -11,7 +11,10 @@ sem_t full;
 pthread_mutex_t request_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t log_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
-int thread_cnt;
+pthread_mutex_t thread_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+int total_thread_cnt;
+int active_thread_cnt;
 
 int createBankOffices(unsigned int quantity)
 {
@@ -20,7 +23,8 @@ int createBankOffices(unsigned int quantity)
     offices[0].id = MAIN_THREAD_ID;
     offices[0].tid = pthread_self();
     shutdown = false;
-    thread_cnt = quantity;
+    total_thread_cnt = quantity;
+    active_thread_cnt = 0;
 
     for (unsigned int i = 1; i <= quantity; i++)
     {
@@ -45,6 +49,10 @@ void *bank_office_service_routine(void *officePtr)
         logSyncMechSem(getLogfile(), pthread_self(), SYNC_OP_SEM_WAIT, SYNC_ROLE_CONSUMER, office->id, semValue);
 
         sem_wait(&full);
+
+        pthread_mutex_lock(&thread_cnt_mutex);
+        active_thread_cnt++;
+        pthread_mutex_unlock(&thread_cnt_mutex);
 
         logSyncMech(getLogfile(), MAIN_THREAD_ID, SYNC_OP_MUTEX_LOCK, SYNC_ROLE_CONSUMER, 0);
         pthread_mutex_lock(&request_queue_mutex);
@@ -82,19 +90,32 @@ void *bank_office_service_routine(void *officePtr)
 
         pthread_mutex_unlock(&shutdown_mutex);
         logSyncMech(getLogfile(), office->id, SYNC_OP_MUTEX_UNLOCK, SYNC_ROLE_SHUTDOWN, currentRequest.value.header.pid);
+
+        pthread_mutex_lock(&thread_cnt_mutex);
+        active_thread_cnt--;
+        pthread_mutex_unlock(&thread_cnt_mutex);
     }
 
     return officePtr;
 }
 
-int checkRequestHeader(req_header_t header)
+int checkRequestHeader(tlv_request_t req)
 {
 
-    if (!existsBankAccount(header.account_id))
+    if (!existsBankAccount(req.value.header.account_id))
         return -1;
 
-    if (!passwordIsCorrect(*findBankAccount(header.account_id), header.password))
+    if (((req.type == OP_CREATE_ACCOUNT) && (req.value.header.account_id != ADMIN_ACCOUNT_ID)) ||
+        ((req.type == OP_BALANCE) && (req.value.header.account_id == ADMIN_ACCOUNT_ID)) ||
+        ((req.type == OP_TRANSFER) && (req.value.header.account_id == ADMIN_ACCOUNT_ID || req.value.transfer.account_id == ADMIN_ACCOUNT_ID)) ||
+        ((req.type == OP_SHUTDOWN) && (req.value.header.account_id != ADMIN_ACCOUNT_ID)))
+    {
+
         return -2;
+    }
+
+    if (!passwordIsCorrect(*findBankAccount(req.value.header.account_id), req.value.header.password))
+        return -3;
 
     return 0;
 }
@@ -117,42 +138,38 @@ bool passwordIsCorrect(bank_account_t account, char *pwd)
 
 int getActiveThreadCount()
 {
-
-    int active_thread_cnt, full_value, empty_value;
-
-    sem_getvalue(&full, &full_value);
-    sem_getvalue(&empty, &empty_value);
-
-    active_thread_cnt = thread_cnt - full_value - empty_value;
-
     return active_thread_cnt;
 }
 
 int handleRequest(tlv_request_t request, uint32_t officeID)
 {
     enum op_type type = request.type;
-    req_header_t header = request.value.header;
 
     tlv_reply_t reply;
-    reply.length = sizeof(tlv_reply_t);
     reply.value.header.account_id = request.value.header.account_id;
     reply.type = type;
 
-    int headerCheckStatus = checkRequestHeader(header);
+    int headerCheckStatus = checkRequestHeader(request);
     // TODO: as ordens da verificacao estao ao contrario
     // TODO: METER EM SECCAO CRITICA
+    
     if (headerCheckStatus != 0)
     {
+
         if (headerCheckStatus == -1)
+        {
+            reply.value.header.ret_code = RC_LOGIN_FAIL;
+        }
+        else if (headerCheckStatus == -2)
+        {
+            reply.value.header.ret_code = RC_OP_NALLOW;
+        }
+        else if (headerCheckStatus == -3)
         {
             reply.value.header.ret_code = RC_ID_NOT_FOUND;
         }
 
-        if (headerCheckStatus == -2)
-        {
-
-            reply.value.header.ret_code = RC_LOGIN_FAIL;
-        }
+        reply.length = sizeof(rep_header_t);
     }
     else
     {
@@ -210,7 +227,7 @@ int sendReply(tlv_request_t request, tlv_reply_t reply)
     if (reply_fifo_fd == -1)
         return -1;
 
-    write(reply_fifo_fd, &reply, sizeof(tlv_reply_t));
+    write(reply_fifo_fd, &reply, sizeof(op_type_t) + sizeof(uint32_t) + reply.length);
     close(reply_fifo_fd);
 
     return 0;
@@ -228,7 +245,7 @@ int setupRequestFIFO()
 int waitForRequests()
 {
 
-    int semValue;
+    int semValue, nRead;
     bool isEOF = false;
 
     tlv_request_t received_request;
@@ -236,7 +253,9 @@ int waitForRequests()
     while (!shutdown || !isEOF)
     {
 
-        int nRead = read(request_fifo_fd, &received_request, sizeof(tlv_request_t));
+        nRead = read(request_fifo_fd, &received_request.type, sizeof(op_type_t));
+        nRead = read(request_fifo_fd, &received_request.length, sizeof(uint32_t));
+        nRead = read(request_fifo_fd, &received_request.value, sizeof(req_value_t));
 
         if (nRead == 0)
         {

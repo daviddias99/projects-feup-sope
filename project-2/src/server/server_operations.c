@@ -3,23 +3,17 @@
 int op_createAccount(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 {
 
-    req_header_t header = request_value.header;
-
     reply->type = OP_CREATE_ACCOUNT;
+    reply->length = sizeof(rep_header_t);
 
-    if (header.account_id != ADMIN_ACCOUNT_ID)
-    {
-        reply->value.header.ret_code = RC_OP_NALLOW;
-
-        return -1;
-    }
 
     bank_account_t newAccount = createBankAccount(request_value.create.account_id, request_value.create.password, request_value.create.balance);
 
     if (insertBankAccount(newAccount,request_value.header.op_delay_ms,officeID) == RC_ID_IN_USE)
     {
         reply->value.header.ret_code = RC_ID_IN_USE;
-        return -2;
+
+        return -1;
     }
 
     reply->value.header.account_id = request_value.header.account_id;
@@ -32,16 +26,9 @@ int op_checkBalance(req_value_t request_value, tlv_reply_t *reply,uint32_t offic
 {
 
     req_header_t header = request_value.header;
+    reply->length = sizeof(rep_header_t) + sizeof(rep_balance_t);
 
     reply->type = OP_BALANCE;
-
-    if (header.account_id == ADMIN_ACCOUNT_ID)
-    {
-
-        reply->value.header.ret_code = RC_OP_NALLOW;
-
-        return -1;
-    }
 
     bank_account_t account = *findBankAccount(request_value.header.account_id);
 
@@ -56,6 +43,8 @@ int op_checkBalance(req_value_t request_value, tlv_reply_t *reply,uint32_t offic
 
     pthread_mutex_unlock(&account_mutex[reply->value.header.account_id]);
 
+
+
     return 0;
 }
 
@@ -66,12 +55,11 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
     UNUSED(officeID);
 
     reply->type = OP_TRANSFER;
+    reply->length = sizeof(rep_header_t);
 
-    // TODO: isto devia estar dentro de uma seccao critica pq entretanto a conta pode ser criada e depois dá success e n devia dar
-
-    if (request_value.header.account_id == ADMIN_ACCOUNT_ID || request_value.transfer.account_id == ADMIN_ACCOUNT_ID)
+    if (!existsBankAccount(request_value.transfer.account_id))
     {
-        reply->value.header.ret_code = RC_OP_NALLOW;
+        reply->value.header.ret_code = RC_ID_NOT_FOUND;
 
         return -1;
     }
@@ -81,13 +69,6 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
         reply->value.header.ret_code = RC_ID_NOT_FOUND;
 
         return -3;
-    }
-
-    if (request_value.header.account_id == request_value.transfer.account_id)
-    {
-        reply->value.header.ret_code = RC_SAME_ID;
-
-        return -2;
     }
 
     dest = findBankAccount(request_value.transfer.account_id);
@@ -119,14 +100,14 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
     {
         reply->value.header.ret_code = RC_NO_FUNDS;
 
-        return -4;
+        return -3;
     }
 
     if (dest->balance + request_value.transfer.amount > MAX_BALANCE)
     {
         reply->value.header.ret_code = RC_TOO_HIGH;
 
-        return -5;
+        return -4;
     }
 
     dest->balance += request_value.transfer.amount;
@@ -139,6 +120,7 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 
     reply->value.header.account_id = request_value.header.account_id;
     reply->value.header.ret_code = RC_OK;
+    reply->length += sizeof(rep_transfer_t);
 
     return 0;
 }
@@ -146,20 +128,11 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
 int op_shutdown(req_value_t request_value, tlv_reply_t* reply,uint32_t officeID){
 
     UNUSED(officeID);
-
-    req_header_t header = request_value.header;
+    UNUSED(request_value);
 
     reply->type = OP_SHUTDOWN;
-
-    if (header.account_id != ADMIN_ACCOUNT_ID)
-    {
-
-        reply->value.header.ret_code = RC_OP_NALLOW;
-
-        return -1;
-    }
-
     reply->value.header.ret_code = RC_OK;
+    reply->length = sizeof(rep_header_t) + sizeof(rep_shutdown_t);
 
     return 0;
 }

@@ -18,7 +18,8 @@ bank_account_t createBankAccount(uint32_t id, char *password, uint32_t balance)
     strcpy(temp, password);
     strcat(temp, newBankAccount.salt);
 
-    generateSHA256sum(temp, newBankAccount.hash);
+    if(generateSHA256sum(temp, newBankAccount.hash) != 0)
+        return errorAccount();
 
     return newBankAccount;
 }
@@ -33,18 +34,27 @@ int insertBankAccount(bank_account_t newAccount, uint32_t delay,uint32_t officeI
     if (existsBankAccount(newAccount.account_id)) 
         return RC_ID_IN_USE;
 
-    logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_LOCK,SYNC_ROLE_ACCOUNT,0);
-    pthread_mutex_lock(&account_mutex[newAccount.account_id]);
+    if(logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_LOCK,SYNC_ROLE_ACCOUNT,0) < 0)
+        return -1;
 
-    logDelay(getLogfile(),officeID,delay);
+    if(pthread_mutex_lock(&account_mutex[newAccount.account_id]) != 0)
+        return -2;
+
+    if(logDelay(getLogfile(),officeID,delay) < 0)
+        return -1;
+
     usleep(MS_TO_US(delay));
 
     accounts[newAccount.account_id] = newAccount;
 
-    logAccountCreation(getLogfile(), pthread_self(), &accounts[newAccount.account_id]);
+    if(logAccountCreation(getLogfile(), pthread_self(), &accounts[newAccount.account_id]) < 0)
+        return -1;
 
-    pthread_mutex_unlock(&account_mutex[newAccount.account_id]);
-    logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_UNLOCK,SYNC_ROLE_ACCOUNT,0);
+    if(pthread_mutex_unlock(&account_mutex[newAccount.account_id]) != 0)
+        return -2;
+
+    if(logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_UNLOCK,SYNC_ROLE_ACCOUNT,0) < 0)
+        return -1;
 
     return 0;
 }
@@ -52,16 +62,13 @@ int insertBankAccount(bank_account_t newAccount, uint32_t delay,uint32_t officeI
 bool existsBankAccount(uint32_t id)
 {
     if (id >= MAX_BANK_ACCOUNTS) {
-        print_location();
         return false;
     }
 
     if (accounts[id].account_id != ERROR_ACCOUNT_ID) {
-        print_location();
         return true;
     }
 
-    print_location();
     return false;
 }
 
@@ -74,7 +81,9 @@ int initAccounts()
 {
     for (size_t i = 0; i < MAX_BANK_ACCOUNTS; i++)
     {
-        pthread_mutex_init(&account_mutex[i], NULL);
+        if(pthread_mutex_init(&account_mutex[i], NULL) != 0)
+            return -1;
+
         accounts[i] = errorAccount();
     }
 
