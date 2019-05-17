@@ -218,7 +218,6 @@ int sendReply(tlv_request_t request, tlv_reply_t reply)
     logReply(getLogfile(), pthread_self(), &reply);
 
     int reply_fifo_fd = open(reply_fifo_name, O_WRONLY);
-
     if (reply_fifo_fd == -1)
         return -1;
 

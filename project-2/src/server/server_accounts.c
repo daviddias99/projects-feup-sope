@@ -40,14 +40,14 @@ int insertBankAccount(bank_account_t newAccount, uint32_t delay,uint32_t officeI
     if(pthread_mutex_lock(&account_mutex[newAccount.account_id]) != 0)
         return -2;
 
-    if(logDelay(getLogfile(),officeID,delay) < 0)
+    if(logSyncDelay(getLogfile(), officeID, newAccount.account_id, delay) < 0)
         return -1;
 
     usleep(MS_TO_US(delay));
 
     accounts[newAccount.account_id] = newAccount;
 
-    if(logAccountCreation(getLogfile(), pthread_self(), &accounts[newAccount.account_id]) < 0)
+    if(logAccountCreation(getLogfile(), officeID, &accounts[newAccount.account_id]) < 0)
         return -1;
 
     if(pthread_mutex_unlock(&account_mutex[newAccount.account_id]) != 0)

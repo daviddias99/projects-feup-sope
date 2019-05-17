@@ -156,6 +156,8 @@ int recordOperation(tlv_request_t *request, tlv_reply_t *reply)
         return 2;
     }
 
+    // TODO: this shouldn't be here
+
     if(reply->value.header.ret_code != RC_OK){
 
         if(reply->type == OP_SHUTDOWN){

@@ -7,7 +7,7 @@
 #include "server_operations.h"
 
 void printSizes(){
-
+/*
     printf("tlv_request: %ld \n",sizeof(tlv_request_t));
     printf("req_value: %ld \n",sizeof(req_value_t));
     printf("req_transfer: %ld \n",sizeof(req_transfer_t));
@@ -27,7 +27,7 @@ void printSizes(){
 
     printf("ret_code: %ld \n",sizeof(ret_code_t));
     printf("op_type: %ld \n",sizeof(op_type_t));
-
+*/
 }
 
 int main(int argc, char* argv[]){
@@ -52,18 +52,18 @@ int main(int argc, char* argv[]){
 
     printSizes();
 
-    bank_account_t adminAccount = createAdminBankAccount(adminPassword);
-
-    memset(argv[2],0,strlen(argv[2])); // don't store the admins password in plain text
-
     openLogFile();
-    initSyncMechanisms((size_t)bankOfficeCount);
-    initAccounts();
 
-    requests = *queue_create();
-    insertBankAccount(adminAccount,0,MAIN_THREAD_ID);
+    initSyncMechanisms((size_t)bankOfficeCount);
 
     createBankOffices(bankOfficeCount);
+    initAccounts();
+
+    bank_account_t adminAccount = createAdminBankAccount(adminPassword);
+    memset(argv[2],0,strlen(argv[2])); // don't store the admins password in plain text
+    insertBankAccount(adminAccount,0,MAIN_THREAD_ID);
+
+    requests = *queue_create();
 
     setupRequestFIFO();
 
