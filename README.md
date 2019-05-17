@@ -9,7 +9,7 @@
 - [ ] 5. Implementar secção crítica para o login
 - [ ] 6. Implementar secção crítica para as verificações
 - [x] 7. Contador de threads ativos
-- [ ] 8. Verificar logging 
+- [x] 8. Verificar logging 
 - [ ] 9. Error checking de todas as funções de sistema e afins
     - [x] server_accounts
     - [ ] server_bank_office

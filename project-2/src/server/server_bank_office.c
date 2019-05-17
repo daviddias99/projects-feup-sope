@@ -54,7 +54,7 @@ void *bank_office_service_routine(void *officePtr)
         active_thread_cnt++;
         pthread_mutex_unlock(&thread_cnt_mutex);
 
-        logSyncMech(getLogfile(), MAIN_THREAD_ID, SYNC_OP_MUTEX_LOCK, SYNC_ROLE_CONSUMER, 0);
+        logSyncMech(getLogfile(),office->id, SYNC_OP_MUTEX_LOCK, SYNC_ROLE_CONSUMER, 0);
         pthread_mutex_lock(&request_queue_mutex);
 
         tlv_request_t currentRequest = queue_pop(&requests);
@@ -62,7 +62,7 @@ void *bank_office_service_routine(void *officePtr)
         logRequest(getLogfile(), office->id, &currentRequest);
 
         pthread_mutex_unlock(&request_queue_mutex);
-        logSyncMech(getLogfile(), MAIN_THREAD_ID, SYNC_OP_MUTEX_UNLOCK, SYNC_ROLE_CONSUMER, currentRequest.value.header.pid);
+        logSyncMech(getLogfile(), office->id, SYNC_OP_MUTEX_UNLOCK, SYNC_ROLE_CONSUMER, currentRequest.value.header.pid);
 
         sem_post(&empty);
 
@@ -250,11 +250,10 @@ int waitForRequests()
 
         nRead = read(request_fifo_fd, &received_request.type, sizeof(op_type_t));
         nRead = read(request_fifo_fd, &received_request.length, sizeof(uint32_t));
-        nRead = read(request_fifo_fd, &received_request.value, sizeof(req_value_t));
+        nRead = read(request_fifo_fd, &received_request.value, received_request.length);
 
         if (nRead == 0)
-        {
-
+        {   
             isEOF = true;
             break; // mudar isto
         }
@@ -277,6 +276,7 @@ int waitForRequests()
         logSyncMechSem(getLogfile(), MAIN_THREAD_ID, SYNC_OP_SEM_POST, SYNC_ROLE_PRODUCER,received_request.value.header.pid , semValue);
     }
 
+    close(request_fifo_fd);
     unlink(SERVER_FIFO_PATH);
 
     return 0;
@@ -286,7 +286,6 @@ int shutdown_server()
 {
     shutdown = true;
     fchmod(request_fifo_fd, S_IRUSR | S_IRGRP | S_IROTH);
-    close(request_fifo_fd);
     close(request_fifo_fd_DUMMY);
 
     return 0;
