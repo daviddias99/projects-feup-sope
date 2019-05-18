@@ -149,9 +149,9 @@ int handleRequest(tlv_request_t request, uint32_t officeID)
     if (headerCheckStatus != 0)
     {
         if (headerCheckStatus == -1)
-        {
             reply.value.header.ret_code = RC_LOGIN_FAIL;
-        }
+        if (headerCheckStatus == -2)
+            reply.value.header.ret_code = RC_OP_NALLOW;
 
         reply.length = sizeof(rep_header_t);
     }
