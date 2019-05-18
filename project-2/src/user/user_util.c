@@ -83,7 +83,6 @@ int setupHandlers(){
         perror("Signal Handler");
         return 2;
     }
-    print_dbg("setup sigint handler\n");
 
     return 0;
 }
@@ -172,8 +171,6 @@ int closeComunication()
         return 1;
     }
 
-    print_location();
-
     return 0;
 }
 
@@ -193,21 +190,6 @@ int recordOperation(tlv_request_t *request, tlv_reply_t *reply)
         printf("Error: %s\n", ERROR_MESSAGES[LOG_REQUEST_ERROR]);
         close(fd);
         return 2;
-    }
-
-    // TODO: this shouldn't be here
-
-    if(reply->value.header.ret_code != RC_OK){
-
-        if(reply->type == OP_SHUTDOWN){
-
-            reply->value.shutdown.active_offices = 0;
-        }
-        else if(reply->type == OP_TRANSFER){
-
-            reply->value.transfer.balance  = request->value.transfer.amount;
-        }
-
     }
 
     if (logReply(fd, pid, reply) < 0)

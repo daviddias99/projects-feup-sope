@@ -148,14 +148,9 @@ int handleRequest(tlv_request_t request, uint32_t officeID)
 
     if (headerCheckStatus != 0)
     {
-
         if (headerCheckStatus == -1)
         {
             reply.value.header.ret_code = RC_LOGIN_FAIL;
-        }
-        else if (headerCheckStatus == -2)
-        {
-            reply.value.header.ret_code = RC_OP_NALLOW;
         }
 
         reply.length = sizeof(rep_header_t);
@@ -211,7 +206,11 @@ int handleRequest(tlv_request_t request, uint32_t officeID)
                 logDelay(getLogfile(), officeID, request.value.header.op_delay_ms);
                 usleep(MS_TO_US(request.value.header.op_delay_ms));
                 shutdown_server();
-                reply.value.shutdown.active_offices = getActiveThreadCount() - 1; // the -1 is to account for the thread which is handling the shutdown
+
+                if (reply.value.header.ret_code != OK)
+                    reply.value.shutdown.active_offices = 0;
+                else
+                    reply.value.shutdown.active_offices = getActiveThreadCount() - 1; // the -1 is to account for the thread which is handling the shutdown
             }
 
             break;
@@ -391,8 +390,6 @@ int closeCommunication() {
         perror("Request fifo unlinking error");
         returnCode = -2;
     }
-
-    print_location();
 
     return returnCode;
 }

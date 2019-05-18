@@ -109,7 +109,7 @@ int op_transfer(req_value_t request_value, tlv_reply_t *reply,uint32_t officeID)
     return 0;
 }
 
-int op_shutdown(req_value_t request_value, tlv_reply_t* reply,uint32_t officeID){
+int op_shutdown(req_value_t request_value, tlv_reply_t* reply, uint32_t officeID){
 
     UNUSED(officeID);
     UNUSED(request_value);
