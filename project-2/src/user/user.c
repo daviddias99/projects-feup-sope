@@ -29,11 +29,14 @@ int main(int argc, char* argv[]){
     if(setupRequestFIFO() != 0)
         exit(4);
 
-    if(waitResponse(&request, &reply) != 0)
+    if(setupHandlers() != 0)
         exit(5);
 
-    if(recordOperation(&request, &reply) != 0)
+    if(waitResponse(&request, &reply) != 0)
         exit(6);
+
+    if(recordOperation(&request, &reply) != 0)
+        exit(7);
 
     return 0;
 }

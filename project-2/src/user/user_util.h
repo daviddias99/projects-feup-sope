@@ -19,9 +19,13 @@
  
 void alarm_handler(int signo);
 
+void signal_handler(int signo);
+
 void printErrorMessage(int error);
 
 int readCommand(user_command_t* user_command);
+
+int setupHandlers();
 
 int setupRequestFIFO();
 
