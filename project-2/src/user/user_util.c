@@ -62,28 +62,28 @@ int readCommand(user_command_t *user_command)
 }
 
 int setupHandlers(){
-    struct sigaction action_alarm;
-    struct sigaction action_signal;
+    struct sigaction action;
 
-    action_alarm.sa_handler = alarm_handler;
-    sigemptyset(&action_alarm.sa_mask);
-    action_alarm.sa_flags = 0;
+    action.sa_handler = alarm_handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
 
-    if (sigaction(SIGALRM, &action_alarm, NULL) < 0)
+    if (sigaction(SIGALRM, &action, NULL) < 0)
     {
         perror("Alarm Handler");
         return 1;
     }
 
-    action_signal.sa_handler = signal_handler;
-    sigemptyset(&action_signal.sa_mask);
-    action_signal.sa_flags = 0;
+    action.sa_handler = signal_handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
 
-    if (sigaction(SIGINT, &action_signal, NULL) < 0)
+    if (sigaction(SIGINT, &action, NULL) < 0)
     {
         perror("Signal Handler");
         return 2;
     }
+    print_dbg("setup sigint handler\n");
 
     return 0;
 }
@@ -168,9 +168,11 @@ int closeComunication()
 
     if (unlink(response_filename) == -1)
     {
-        perror("Response FIFO.");
+        perror("Response FIFO");
         return 1;
     }
+
+    print_location();
 
     return 0;
 }
@@ -487,3 +489,4 @@ int waitResponse(tlv_request_t *request, tlv_reply_t *reply)
 
     return 0;
 }
+

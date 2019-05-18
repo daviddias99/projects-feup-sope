@@ -32,14 +32,14 @@ void printSizes(){
 
 void sigint_handler(int signo) {
     UNUSED(signo);
-    exit(0);
+    exit(closeCommunication());
 }
 
 
 int main(int argc, char* argv[]){
 
-    struct sigaction action;
 
+    struct sigaction action;
     action.sa_handler = sigint_handler;
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
@@ -63,28 +63,41 @@ int main(int argc, char* argv[]){
 
         fprintf( stderr, "Invalid password\n");
         exit(-2);
+    }else if(bankOfficeCount == 0){
+
+        fprintf( stderr, "Invalid thread count (nothing would happen)\n");
+        exit(-2);
     }
 
-    
-    atexit(closeCommunication);
-    openLogFile();
+   
+    if(openLogFile() != 0)
+        return -3;
 
-    initSyncMechanisms((size_t)bankOfficeCount);
+    if(initSyncMechanisms((size_t)bankOfficeCount) != 0)
+        return -4;
 
-    createBankOffices(bankOfficeCount);
-    initAccounts();
+    if(createBankOffices(bankOfficeCount) != 0)
+        return -5;
+
+    if(initAccounts() != 0)
+        return -6;
 
     bank_account_t adminAccount = createAdminBankAccount(adminPassword);
     memset(argv[2],0,strlen(argv[2])); // don't store the admins password in plain text
-    insertBankAccount(adminAccount,0,MAIN_THREAD_ID);
+
+    if(insertBankAccount(adminAccount,0,MAIN_THREAD_ID) != 0)
+        return -7;
 
     requests = *queue_create();
 
-    setupRequestFIFO();
+    if(setupRequestFIFO() != 0)
+        return -8;
 
-    waitForRequests();
+    if(waitForRequests() != 0)
+        return -9;
 
-    closeOffices();
+    if(closeOffices() != 0)
+        return -10;
 
     return 0;
 }

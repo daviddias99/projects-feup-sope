@@ -10,7 +10,6 @@ sem_t empty;
 sem_t full;
 pthread_mutex_t request_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t log_file_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t thread_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 bank_office_t offices[MAX_BANK_OFFICES];
 
@@ -19,7 +18,6 @@ int active_thread_cnt;
 
 int createBankOffices(unsigned int quantity)
 {
-
 
     offices[0].id = MAIN_THREAD_ID;
     offices[0].tid = pthread_self();
@@ -30,7 +28,8 @@ int createBankOffices(unsigned int quantity)
     for (unsigned int i = 1; i <= quantity; i++)
     {
         offices[i].id = i;
-        pthread_create(&offices[i].tid, NULL, bank_office_service_routine, (void *)&offices[i]);
+        if (pthread_create(&offices[i].tid, NULL, bank_office_service_routine, (void *)&offices[i]) != 0)
+            return -1;
     }
 
     return 0;
@@ -51,11 +50,23 @@ void *bank_office_service_routine(void *officePtr)
 
         sem_wait(&full);
 
+        pthread_mutex_lock(&request_queue_mutex);
+
+        if(shutdown && queue_is_empty(&requests)){
+
+            pthread_mutex_unlock(&request_queue_mutex);
+            break;
+        }
+
+        pthread_mutex_unlock(&request_queue_mutex);
+
+
+
         pthread_mutex_lock(&thread_cnt_mutex);
         active_thread_cnt++;
         pthread_mutex_unlock(&thread_cnt_mutex);
 
-        logSyncMech(getLogfile(),office->id, SYNC_OP_MUTEX_LOCK, SYNC_ROLE_CONSUMER, 0);
+        logSyncMech(getLogfile(), office->id, SYNC_OP_MUTEX_LOCK, SYNC_ROLE_CONSUMER, 0);
         pthread_mutex_lock(&request_queue_mutex);
 
         tlv_request_t currentRequest = queue_pop(&requests);
@@ -68,31 +79,9 @@ void *bank_office_service_routine(void *officePtr)
         sem_post(&empty);
 
         sem_getvalue(&empty, &semValue);
-        logSyncMechSem(getLogfile(),  office->id, SYNC_OP_SEM_POST, SYNC_ROLE_CONSUMER,currentRequest.value.header.pid, semValue);
+        logSyncMechSem(getLogfile(), office->id, SYNC_OP_SEM_POST, SYNC_ROLE_CONSUMER, currentRequest.value.header.pid, semValue);
 
-
-        
         handleRequest(currentRequest, office->id);
-
-        logSyncMech(getLogfile(), office->id, SYNC_OP_MUTEX_LOCK, SYNC_ROLE_SHUTDOWN, currentRequest.value.header.pid);
-        pthread_mutex_lock(&shutdown_mutex);
-
-        if (shutdown)
-        {
-
-            sem_getvalue(&full, &semValue);
-
-            if (semValue == 0)
-            {
-
-                pthread_mutex_unlock(&shutdown_mutex);
-                logSyncMech(getLogfile(), office->id, SYNC_OP_MUTEX_UNLOCK, SYNC_ROLE_SHUTDOWN, currentRequest.value.header.pid);
-                break;
-            }
-        }
-
-        pthread_mutex_unlock(&shutdown_mutex);
-        logSyncMech(getLogfile(), office->id, SYNC_OP_MUTEX_UNLOCK, SYNC_ROLE_SHUTDOWN, currentRequest.value.header.pid);
 
         pthread_mutex_lock(&thread_cnt_mutex);
         active_thread_cnt--;
@@ -131,7 +120,8 @@ bool passwordIsCorrect(bank_account_t account, char *pwd)
     strcpy(temp, pwd);
     strcat(temp, account.salt);
 
-    generateSHA256sum(temp, temp);
+    if (generateSHA256sum(temp, temp) != 0)
+        return false;
 
     if (strcmp(temp, account.hash) == 0)
         return true;
@@ -145,8 +135,7 @@ int getActiveThreadCount()
 }
 
 int handleRequest(tlv_request_t request, uint32_t officeID)
-{   
-    print_dbg("office id %d\n\n", officeID);
+{
 
     enum op_type type = request.type;
 
@@ -156,7 +145,7 @@ int handleRequest(tlv_request_t request, uint32_t officeID)
 
     int headerCheckStatus = checkRequestHeader(request);
     // TODO: METER EM SECCAO CRITICA
-    
+
     if (headerCheckStatus != 0)
     {
 
@@ -176,29 +165,54 @@ int handleRequest(tlv_request_t request, uint32_t officeID)
         switch (type)
         {
         case OP_CREATE_ACCOUNT:
-            op_createAccount(request.value, &reply, officeID);
+
+            if (op_createAccount(request.value, &reply, officeID) != 0)
+            {
+
+                reply.value.header.ret_code = RC_OTHER;
+                reply.length = sizeof(rep_header_t);
+            }
 
             break;
 
         case OP_BALANCE:
 
-            op_checkBalance(request.value, &reply, officeID);
+            if (op_checkBalance(request.value, &reply, officeID) != 0)
+            {
+
+                reply.value.header.ret_code = RC_OTHER;
+                reply.length = sizeof(rep_header_t);
+            }
 
             break;
 
         case OP_TRANSFER:
 
-            op_transfer(request.value, &reply, officeID);
+            if (op_transfer(request.value, &reply, officeID) != 0)
+            {
+
+                reply.value.header.ret_code = RC_OTHER;
+                reply.length = sizeof(rep_header_t);
+            }
 
             break;
 
         case OP_SHUTDOWN:
 
-            op_shutdown(request.value, &reply, officeID);
-            logDelay(getLogfile(), officeID, request.value.header.op_delay_ms);
-            usleep(MS_TO_US(request.value.header.op_delay_ms));
-            shutdown_server();
-            reply.value.shutdown.active_offices = getActiveThreadCount();
+            if (op_shutdown(request.value, &reply, officeID) != 0)
+            {
+
+                reply.value.header.ret_code = RC_OTHER;
+                reply.length = sizeof(rep_header_t);
+            }
+            else
+            {
+
+                logDelay(getLogfile(), officeID, request.value.header.op_delay_ms);
+                usleep(MS_TO_US(request.value.header.op_delay_ms));
+                shutdown_server();
+                reply.value.shutdown.active_offices = getActiveThreadCount() - 1; // the -1 is to account for the thread which is handling the shutdown
+            }
 
             break;
 
@@ -207,7 +221,8 @@ int handleRequest(tlv_request_t request, uint32_t officeID)
         }
     }
 
-    sendReply(request, reply, officeID);
+    if (sendReply(request, reply, officeID) != 0)
+        return -1;
 
     return 0;
 }
@@ -220,13 +235,20 @@ int sendReply(tlv_request_t request, tlv_reply_t reply, uint32_t officeID)
     sprintf(user_id, "%05d", request.value.header.pid);
     strcat(reply_fifo_name, user_id);
 
-    logReply(getLogfile(), officeID, &reply);
-
     int reply_fifo_fd = open(reply_fifo_name, O_WRONLY);
-    if (reply_fifo_fd == -1)
-        return -1;
 
-    write(reply_fifo_fd, &reply, sizeof(op_type_t) + sizeof(uint32_t) + reply.length);
+    if (reply_fifo_fd == -1)
+    {
+
+        reply.value.header.ret_code = RC_USR_DOWN;
+    }
+    else if (write(reply_fifo_fd, &reply, sizeof(op_type_t) + sizeof(uint32_t) + reply.length) == -1)
+    {
+
+        perror("Reply write error");
+    }
+
+    logReply(getLogfile(), officeID, &reply);
     close(reply_fifo_fd);
 
     return 0;
@@ -234,9 +256,31 @@ int sendReply(tlv_request_t request, tlv_reply_t reply, uint32_t officeID)
 
 int setupRequestFIFO()
 {
-    mkfifo(SERVER_FIFO_PATH, REQUEST_FIFO_PERM);
+    if (mkfifo(SERVER_FIFO_PATH, REQUEST_FIFO_PERM) == -1)
+    {
+
+        perror("Request FIFO creation error");
+        return -1;
+    }
+
     request_fifo_fd = open(SERVER_FIFO_PATH, O_RDONLY);
+
+    if (request_fifo_fd == -1)
+    {
+
+        perror("Request FIFO opening error");
+        return -2;
+    }
+
     request_fifo_fd_DUMMY = open(SERVER_FIFO_PATH, O_WRONLY);
+
+    if (request_fifo_fd_DUMMY == -1)
+    {
+
+        perror("Request FIFO opening error");
+        close(request_fifo_fd);
+        return -3;
+    }
 
     return 0;
 }
@@ -253,18 +297,29 @@ int waitForRequests()
     {
 
         nRead = read(request_fifo_fd, &received_request.type, sizeof(op_type_t));
+
+        if (nRead == 0)
+            break;
+        else if (nRead == -1)
+            continue;
+
         nRead = read(request_fifo_fd, &received_request.length, sizeof(uint32_t));
+
+        if (nRead == 0)
+            break;
+        else if (nRead == -1)
+            continue;
+
         nRead = read(request_fifo_fd, &received_request.value, received_request.length);
 
         if (nRead == 0)
-        {   
-            isEOF = true;
-            break; 
-        }
+            break;
+        else if (nRead == -1)
+            continue;
 
-        logRequest(getLogfile(),MAIN_THREAD_ID, &received_request);
+        logRequest(getLogfile(), MAIN_THREAD_ID, &received_request);
         sem_getvalue(&empty, &semValue);
-        logSyncMechSem(getLogfile(), MAIN_THREAD_ID, SYNC_OP_SEM_WAIT, SYNC_ROLE_PRODUCER,received_request.value.header.pid , semValue);
+        logSyncMechSem(getLogfile(), MAIN_THREAD_ID, SYNC_OP_SEM_WAIT, SYNC_ROLE_PRODUCER, received_request.value.header.pid, semValue);
         sem_wait(&empty);
 
         logSyncMech(getLogfile(), MAIN_THREAD_ID, SYNC_OP_MUTEX_LOCK, SYNC_ROLE_PRODUCER, received_request.value.header.pid);
@@ -277,42 +332,67 @@ int waitForRequests()
 
         sem_post(&full);
         sem_getvalue(&full, &semValue);
-        logSyncMechSem(getLogfile(), MAIN_THREAD_ID, SYNC_OP_SEM_POST, SYNC_ROLE_PRODUCER,received_request.value.header.pid , semValue);
+        logSyncMechSem(getLogfile(), MAIN_THREAD_ID, SYNC_OP_SEM_POST, SYNC_ROLE_PRODUCER, received_request.value.header.pid, semValue);
     }
 
-    return 0;
+    return closeCommunication();
 }
 
 int shutdown_server()
 {
     shutdown = true;
-    fchmod(request_fifo_fd, S_IRUSR | S_IRGRP | S_IROTH);
-    close(request_fifo_fd_DUMMY);
+    if(fchmod(request_fifo_fd, S_IRUSR | S_IRGRP | S_IROTH) == -1){
 
-    return 0;
-}
-
-
-int closeOffices(){
+        perror("Request fifo permission mod error");
+    }
     
-    for(int i = 1; i <= total_thread_cnt;i++){
+    if(close(request_fifo_fd_DUMMY) == -1){
 
-        pthread_cancel(offices[i].tid);
-
-        logBankOfficeClose(getLogfile(),offices[i].id,offices[i].tid);
-
+        perror("Request fifo closing error");
+        return -1;
     }
 
     return 0;
 }
 
-void closeCommunication() {
+int closeOffices()
+{
 
-    close(request_fifo_fd);
-    unlink(SERVER_FIFO_PATH);
-    
+    for(int i = 1; i <= total_thread_cnt;i++){
+
+        sem_post(&full);
+    }
+
+    for (int i = 1; i <= total_thread_cnt; i++)
+    {
+
+        pthread_join(offices[i].tid,NULL);
+        logBankOfficeClose(getLogfile(), offices[i].id, offices[i].tid);
+    }
+
+    return 0;
+}
+
+int closeCommunication() {
+
     sem_destroy(&full);
     sem_destroy(&empty);
 
+    int returnCode = 0;
+
+    if(close(request_fifo_fd) == -1){
+
+        perror("Request fifo closing error");
+        returnCode = -1;
+    }
+
+    if(unlink(SERVER_FIFO_PATH) == -1){
+
+        perror("Request fifo unlinking error");
+        returnCode = -2;
+    }
+
     print_location();
+
+    return returnCode;
 }
