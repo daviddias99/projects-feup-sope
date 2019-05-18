@@ -37,7 +37,16 @@ void alarm_handler(int signo)
 
     closeComunication();
 
-    exit(7);
+    exit(8);
+}
+
+void signal_handler(int signo)
+{
+    UNUSED(signo);
+
+    closeComunication();
+
+    exit(9);
 }
 
 void printErrorMessage(int error)
@@ -48,6 +57,33 @@ void printErrorMessage(int error)
 int readCommand(user_command_t *user_command)
 {
     command = *user_command;
+
+    return 0;
+}
+
+int setupHandlers(){
+    struct sigaction action_alarm;
+    struct sigaction action_signal;
+
+    action_alarm.sa_handler = alarm_handler;
+    sigemptyset(&action_alarm.sa_mask);
+    action_alarm.sa_flags = 0;
+
+    if (sigaction(SIGALRM, &action_alarm, NULL) < 0)
+    {
+        perror("Alarm Handler");
+        return 1;
+    }
+
+    action_signal.sa_handler = signal_handler;
+    sigemptyset(&action_signal.sa_mask);
+    action_signal.sa_flags = 0;
+
+    if (sigaction(SIGINT, &action_signal, NULL) < 0)
+    {
+        perror("Signal Handler");
+        return 2;
+    }
 
     return 0;
 }
@@ -125,7 +161,7 @@ int closeResponseFIFO()
 }
 
 int closeComunication()
-{ // change name?
+{
 
     closeRequestFIFO();
     closeResponseFIFO();
@@ -146,13 +182,14 @@ int recordOperation(tlv_request_t *request, tlv_reply_t *reply)
 
     if ((fd = open(USER_LOGFILE, O_WRONLY | O_APPEND)) == -1)
     {
-        perror("User Logfile.");
+        perror("User Logfile");
         return 1;
     }
 
     if (logRequest(fd, pid, request) < 0)
     {
         printf("Error: %s\n", ERROR_MESSAGES[LOG_REQUEST_ERROR]);
+        close(fd);
         return 2;
     }
 
@@ -174,7 +211,14 @@ int recordOperation(tlv_request_t *request, tlv_reply_t *reply)
     if (logReply(fd, pid, reply) < 0)
     {
         printf("Error: %s\n", ERROR_MESSAGES[LOG_REPLY_ERROR]);
+        close(fd);
         return 3;
+    }
+    
+    if (close(fd) == -1)
+    {
+        perror("User Logfile");
+        return 4;
     }
 
     return 0;
@@ -430,24 +474,11 @@ int recordError(int ret_code)
 
 int waitResponse(tlv_request_t *request, tlv_reply_t *reply)
 {
-    struct sigaction action;
-
-    action.sa_handler = alarm_handler;
-    sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-
-    if (sigaction(SIGALRM, &action, NULL) < 0)
-    {
-        perror("Alarm Handler");
-        return 1;
-    }
-
     sendRequest(request);
 
     alarm(FIFO_TIMEOUT_SECS);
 
     readReply(reply);
-
 
     alarm(CANCEL_ALARM);
 
