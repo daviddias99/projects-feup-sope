@@ -310,8 +310,9 @@ void closeCommunication() {
 
     close(request_fifo_fd);
     unlink(SERVER_FIFO_PATH);
+    
+    sem_destroy(&full);
+    sem_destroy(&empty);
 
     print_location();
-
-    return;
 }
