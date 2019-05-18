@@ -6,65 +6,38 @@
 #include "server_accounts.h"
 #include "server_operations.h"
 
-void printSizes(){
-/*
-    printf("tlv_request: %ld \n",sizeof(tlv_request_t));
-    printf("req_value: %ld \n",sizeof(req_value_t));
-    printf("req_transfer: %ld \n",sizeof(req_transfer_t));
-    printf("req_create_account: %ld \n",sizeof(req_create_account_t));
-    printf("req_header: %ld \n",sizeof(req_header_t));
+/**
+ * @brief Installs signal handlers used
+ * 
+ * @return int      zero upon sucess, non-zero otherwise
+ */
+int signal_handlers();
 
-    printf("------------\n");
-
-    printf("tlv_reply: %ld \n",sizeof(tlv_reply_t));
-    printf("rep_value: %ld \n",sizeof(rep_value_t));
-    printf("rep_transfer: %ld \n",sizeof(rep_transfer_t));
-    printf("req_shutdown: %ld \n",sizeof(rep_shutdown_t));
-    printf("rep_balance: %ld \n",sizeof(rep_balance_t));
-    printf("rep_header: %ld \n",sizeof(rep_header_t));
-
-    printf("------------\n");
-
-    printf("ret_code: %ld \n",sizeof(ret_code_t));
-    printf("op_type: %ld \n",sizeof(op_type_t));
-*/
-}
-
-void sigint_handler(int signo) {
-    UNUSED(signo);
-    exit(closeCommunication());
-}
+/**
+ * @brief Signal handler used to handle SIGINT and SIGTERM
+ *
+ * @param signo     id of the signal being handled
+ */
+void sigintterm_handler(int signo);
 
 
 int main(int argc, char* argv[]){
 
-
-    struct sigaction action;
-    action.sa_handler = sigint_handler;
-    sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-
     if(argc != 3){
-
         fprintf( stderr, "Usage: %s <bank_office_count> <admin_password>\n", argv[0]);
         exit(-1);
-        
     }
 
     srand(time(NULL));
+    signal_handlers();
     
     int bankOfficeCount = strtol(argv[1],NULL,10);
     char* adminPassword = argv[2];
 
-    if(!passwordIsValid(adminPassword)){
-
+    if(!passwordIsValid(adminPassword)) {
         fprintf( stderr, "Invalid password\n");
         exit(-2);
-    }else if(bankOfficeCount == 0){
-
+    } else if(bankOfficeCount == 0) {
         fprintf( stderr, "Invalid thread count (nothing would happen)\n");
         exit(-2);
     }
@@ -100,4 +73,18 @@ int main(int argc, char* argv[]){
         return -10;
 
     return 0;
+}
+
+int signal_handlers() {
+    struct sigaction action;
+    action.sa_handler = sigintterm_handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+
+    return sigaction(SIGINT, &action, NULL) || sigaction(SIGTERM, &action, NULL);
+}
+
+void sigintterm_handler(int signo) {
+    UNUSED(signo);
+    exit(closeCommunication());
 }

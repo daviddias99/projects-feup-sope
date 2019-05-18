@@ -69,4 +69,5 @@ int generateSalt(char* saltStr);
  */
 int generateSHA256sum(char* str, char* result);
 
+
 #endif
