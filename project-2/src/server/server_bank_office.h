@@ -20,7 +20,7 @@
 #include "../sope.h"
 #include "../request_queue.h"
 
-typedef struct bank_office{         // TODO: mudar nome
+typedef struct bank_office{         
 
     pthread_t tid;
     uint32_t id;

@@ -10,13 +10,13 @@
 - [ ] 6. Implementar secção crítica para as verificações
 - [x] 7. Contador de threads ativos
 - [x] 8. Verificar logging 
-- [ ] 9. Error checking de todas as funções de sistema e afins
+- [x] 9. Error checking de todas as funções de sistema e afins
     - [x] server_accounts
-    - [ ] server_bank_office
-    - [ ] server_operations
+    - [x] server_bank_office
+    - [x] server_operations
     - [x] server_sync
     - [x] server_util
-    - [ ] server
+    - [x] server
 - [x] 10. Corrigir shutdown
 - [x] 11. Close dos offices
 

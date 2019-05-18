@@ -6,7 +6,6 @@ pthread_mutex_t account_mutex[MAX_BANK_ACCOUNTS];
 
 bank_account_t createBankAccount(uint32_t id, char *password, uint32_t balance)
 {
-    // TODO: criar contas com id repetido está a responder OTHER em vez de RC_ID_IN_USE - checkar isto
     bank_account_t newBankAccount;
 
     newBankAccount.account_id = id;
