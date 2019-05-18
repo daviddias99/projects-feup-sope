@@ -10,6 +10,12 @@
 extern sem_t empty;
 extern sem_t full;
 
+/**
+ * @brief Initializes the full and empt semaphores used to direct the request "producing and consuming"
+ * 
+ * @param thread_cnt    number of threads in the server (excluding the main thread)
+ * @return int          zero upon sucess, non-zero otherwise
+ */
 int initSyncMechanisms(size_t thread_cnt);
 
 #endif

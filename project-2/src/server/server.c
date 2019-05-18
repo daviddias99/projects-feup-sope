@@ -24,6 +24,10 @@ int main(int argc, char* argv[]){
 
         fprintf( stderr, "Invalid password\n");
         exit(-2);
+    }else if(bankOfficeCount == 0){
+
+        fprintf( stderr, "Invalid thread count (nothing would happen)\n");
+        exit(-2);
     }
 
     if(openLogFile() != 0)
