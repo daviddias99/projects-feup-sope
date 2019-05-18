@@ -62,7 +62,7 @@ int insertBankAccount(bank_account_t newAccount, uint32_t delay,uint32_t officeI
 bool existsBankAccount(uint32_t id);
 
 /**
- * @brief Get the error account. An error account as an ID that is defined in the constants file as ERROR_ACCOUNT_ID
+ * @brief Get the error account. An error account as an ID that is defined in the constants file as ERROR_ACCOUNT_ID.
  * 
  * @return bank_account_t   error account object
  */

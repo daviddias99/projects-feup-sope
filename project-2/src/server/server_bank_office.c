@@ -10,7 +10,6 @@ sem_t empty;
 sem_t full;
 pthread_mutex_t request_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t log_file_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t thread_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 bank_office_t offices[MAX_BANK_OFFICES];
 
@@ -51,6 +50,18 @@ void *bank_office_service_routine(void *officePtr)
 
         sem_wait(&full);
 
+        pthread_mutex_lock(&request_queue_mutex);
+
+        if(shutdown && queue_is_empty(&requests)){
+
+            pthread_mutex_unlock(&request_queue_mutex);
+            break;
+        }
+
+        pthread_mutex_unlock(&request_queue_mutex);
+
+
+
         pthread_mutex_lock(&thread_cnt_mutex);
         active_thread_cnt++;
         pthread_mutex_unlock(&thread_cnt_mutex);
@@ -71,26 +82,6 @@ void *bank_office_service_routine(void *officePtr)
         logSyncMechSem(getLogfile(), office->id, SYNC_OP_SEM_POST, SYNC_ROLE_CONSUMER, currentRequest.value.header.pid, semValue);
 
         handleRequest(currentRequest, office->id);
-
-        logSyncMech(getLogfile(), office->id, SYNC_OP_MUTEX_LOCK, SYNC_ROLE_SHUTDOWN, currentRequest.value.header.pid);
-        pthread_mutex_lock(&shutdown_mutex);
-
-        if (shutdown)
-        {
-
-            sem_getvalue(&full, &semValue);
-
-            if (semValue == 0)
-            {
-
-                pthread_mutex_unlock(&shutdown_mutex);
-                logSyncMech(getLogfile(), office->id, SYNC_OP_MUTEX_UNLOCK, SYNC_ROLE_SHUTDOWN, currentRequest.value.header.pid);
-                break;
-            }
-        }
-
-        pthread_mutex_unlock(&shutdown_mutex);
-        logSyncMech(getLogfile(), office->id, SYNC_OP_MUTEX_UNLOCK, SYNC_ROLE_SHUTDOWN, currentRequest.value.header.pid);
 
         pthread_mutex_lock(&thread_cnt_mutex);
         active_thread_cnt--;
@@ -381,10 +372,15 @@ int shutdown_server()
 int closeOffices()
 {
 
+    for(int i = 1; i <= total_thread_cnt;i++){
+
+        sem_post(&full);
+    }
+
     for (int i = 1; i <= total_thread_cnt; i++)
     {
 
-        pthread_cancel(offices[i].tid);
+        pthread_join(offices[i].tid,NULL);
         logBankOfficeClose(getLogfile(), offices[i].id, offices[i].tid);
     }
 
