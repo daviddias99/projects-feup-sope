@@ -30,19 +30,17 @@ bank_account_t createAdminBankAccount(char *password)
 
 int insertBankAccount(bank_account_t newAccount, uint32_t delay,uint32_t officeID)
 {
-    if (existsBankAccount(newAccount.account_id)) 
-        return RC_ID_IN_USE;
-
     if(logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_LOCK,SYNC_ROLE_ACCOUNT,0) < 0)
         return -1;
 
     if(pthread_mutex_lock(&account_mutex[newAccount.account_id]) != 0)
         return -2;
 
-    if(logSyncDelay(getLogfile(), officeID, newAccount.account_id, delay) < 0)
-        return -1;
-
+    logSyncDelay(getLogfile(), officeID, newAccount.account_id, delay);
     usleep(MS_TO_US(delay));
+
+    if (existsBankAccount(newAccount.account_id)) 
+        return RC_ID_IN_USE;
 
     accounts[newAccount.account_id] = newAccount;
 

@@ -174,8 +174,7 @@ int closeComunication()
     return 0;
 }
 
-int recordOperation(tlv_request_t *request, tlv_reply_t *reply)
-{
+int recordRequest(tlv_request_t *request) {
     int fd;
     int pid = getpid();
 
@@ -187,9 +186,28 @@ int recordOperation(tlv_request_t *request, tlv_reply_t *reply)
 
     if (logRequest(fd, pid, request) < 0)
     {
-        printf("Error: %s\n", ERROR_MESSAGES[LOG_REQUEST_ERROR]);
+        printf("Error: %s\n", ERROR_MESSAGES[LOG_REPLY_ERROR]);
         close(fd);
-        return 2;
+        return 3;
+    }
+    
+    if (close(fd) == -1)
+    {
+        perror("User Logfile");
+        return 4;
+    }
+
+    return 0;
+}
+
+int recordReply(tlv_reply_t *reply) {
+    int fd;
+    int pid = getpid();
+
+    if ((fd = open(USER_LOGFILE, O_WRONLY | O_APPEND)) == -1)
+    {
+        perror("User Logfile");
+        return 1;
     }
 
     if (logReply(fd, pid, reply) < 0)
@@ -451,7 +469,8 @@ int recordError(int ret_code)
     formatRequest(&request);
     formatReply(&reply, ret_code);
 
-    recordOperation(&request, &reply);
+    recordRequest(&request);
+    recordReply(&reply);
 
     return 0;
 }
@@ -459,10 +478,12 @@ int recordError(int ret_code)
 int waitResponse(tlv_request_t *request, tlv_reply_t *reply)
 {
     sendRequest(request);
+    recordRequest(request);
 
     alarm(FIFO_TIMEOUT_SECS);
 
     readReply(reply);
+    recordReply(reply);
 
     alarm(CANCEL_ALARM);
 

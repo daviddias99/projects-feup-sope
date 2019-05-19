@@ -37,7 +37,9 @@ int closeResponseFIFO();
 
 int closeComunication();
 
-int recordOperation(tlv_request_t* request, tlv_reply_t* reply);
+int recordRequest(tlv_request_t *request);
+
+int recordReply(tlv_reply_t *reply);
 
 int formatReqCreateAccount(req_value_t* request_value);
 

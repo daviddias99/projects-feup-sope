@@ -35,8 +35,5 @@ int main(int argc, char* argv[]){
     if(waitResponse(&request, &reply) != 0)
         exit(6);
 
-    if(recordOperation(&request, &reply) != 0)
-        exit(7);
-
     return 0;
 }

@@ -163,7 +163,6 @@ int handleRequest(tlv_request_t request, uint32_t officeID)
 
             if (op_createAccount(request.value, &reply, officeID) != 0)
             {
-
                 reply.value.header.ret_code = RC_OTHER;
                 reply.length = sizeof(rep_header_t);
             }
@@ -237,9 +236,9 @@ int sendReply(tlv_request_t request, tlv_reply_t reply, uint32_t officeID)
     int reply_fifo_fd = open(reply_fifo_name, O_WRONLY);
 
     if (reply_fifo_fd == -1)
-    {
-
-        reply.value.header.ret_code = RC_USR_DOWN;
+    {   
+        if (reply.value.header.ret_code != RC_OK)
+            reply.value.header.ret_code = RC_USR_DOWN;
     }
     else if (write(reply_fifo_fd, &reply, sizeof(op_type_t) + sizeof(uint32_t) + reply.length) == -1)
     {
