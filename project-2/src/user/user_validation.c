@@ -145,10 +145,16 @@ int validCreationOperation(char* arguments){
 
     char* token = strtok(NULL, " ");
 
+    if(token == NULL)
+        return INV_OP_ARGUMENTS;
+
     if((code = validBalance(token)) != OK)
         return code;
 
     char* password = strtok(NULL, " ");
+
+    if(password == NULL)
+        return INV_OP_ARGUMENTS;
 
     if(validNewPassword(password) != OK)
         return INV_NEW_PASSWORD;
@@ -184,7 +190,7 @@ int validTransferOperation(char* arguments){
 
     char* token = strtok(NULL, " ");
 
-    if(strlen(token) == 0)
+    if(token == NULL)
         return INV_OP_ARGUMENTS;
 
     if((code = validAmount(token)) != OK)
