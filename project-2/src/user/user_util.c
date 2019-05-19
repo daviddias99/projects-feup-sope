@@ -61,7 +61,8 @@ int readCommand(user_command_t *user_command)
     return 0;
 }
 
-int setupHandlers(){
+int setupHandlers()
+{
     struct sigaction action;
 
     action.sa_handler = alarm_handler;
@@ -271,7 +272,6 @@ int formatReqTransfer(req_value_t *request_value)
 
 int formatReqHeader(req_header_t *header)
 {
-
     header->pid = getpid();
     header->account_id = command.accountID;
     memcpy(header->password, command.password, MAX_PASSWORD_LEN);
@@ -339,12 +339,14 @@ int formatRequest(tlv_request_t *request)
 
 int sendRequest(tlv_request_t *request)
 {
-    write(request_fifo_fd, request, sizeof(op_type_t) + sizeof(uint32_t) + request->length);
+    if(write(request_fifo_fd, request, sizeof(op_type_t) + sizeof(uint32_t) + request->length) == -1)
+        return 1;
 
     return 0;
 }
 
-int readReply(tlv_reply_t *reply){
+int readReply(tlv_reply_t *reply)
+{
 
     if(read(response_fifo_fd, &(reply->type), sizeof(op_type_t)) < 0){
         perror("Reply (operation type)");
@@ -368,7 +370,7 @@ int formatRepBalanceAccount(rep_value_t *reply_value)
 {
     rep_balance_t reply_balance;
 
-    reply_balance.balance = 0; // ATTENTION: Impossible to know if you are the user?
+    reply_balance.balance = -1; // ATTENTION: Impossible to know if you are the user?
 
     reply_value->balance = reply_balance;
 
@@ -379,18 +381,18 @@ int formatRepTransfer(rep_value_t *reply_value)
 {
     rep_transfer_t reply_transfer;
 
-    reply_transfer.balance = 0; // ATTENTION: Impossible to know if you are the user?
+    reply_transfer.balance = -1; // ATTENTION: Impossible to know if you are the user?
 
     reply_value->transfer = reply_transfer;
 
     return 0;
 }
 
-int formatRepShutdownTransfer(rep_value_t *reply_value)
+int formatRepShutdown(rep_value_t *reply_value)
 {
     rep_shutdown_t reply_shutdown;
 
-    reply_shutdown.active_offices = 0; // ATTENTION: Impossible to know if you are the user?
+    reply_shutdown.active_offices = -1; // ATTENTION: Impossible to know if you are the user?
 
     reply_value->shutdown = reply_shutdown;
 
@@ -424,7 +426,7 @@ int formatRepValue(rep_value_t *reply_value, int ret_code)
         formatRepTransfer(reply_value);
         break;
     case 3:
-        formatRepShutdownTransfer(reply_value);
+        formatRepShutdown(reply_value);
         break;
     default:
         break;
@@ -474,7 +476,8 @@ int recordError(int ret_code)
 
 int waitResponse(tlv_request_t *request, tlv_reply_t *reply)
 {
-    sendRequest(request);
+    if(sendRequest(request) != 0)
+        return 1;
 
     alarm(FIFO_TIMEOUT_SECS);
 
@@ -484,7 +487,7 @@ int waitResponse(tlv_request_t *request, tlv_reply_t *reply)
     alarm(CANCEL_ALARM);
 
     if (closeComunication() != 0)
-        return 1;
+        return 2;
 
     return 0;
 }
