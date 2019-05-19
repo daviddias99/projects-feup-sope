@@ -463,13 +463,10 @@ int formatReply(tlv_reply_t *reply, int ret_code)
 
 int recordError(int ret_code)
 {
-    tlv_request_t request;
     tlv_reply_t reply;
 
-    formatRequest(&request);
     formatReply(&reply, ret_code);
 
-    recordRequest(&request);
     recordReply(&reply);
 
     return 0;
@@ -478,7 +475,6 @@ int recordError(int ret_code)
 int waitResponse(tlv_request_t *request, tlv_reply_t *reply)
 {
     sendRequest(request);
-    recordRequest(request);
 
     alarm(FIFO_TIMEOUT_SECS);
 
@@ -493,3 +489,6 @@ int waitResponse(tlv_request_t *request, tlv_reply_t *reply)
     return 0;
 }
 
+char* getResponseFIFOName() {
+    return response_filename;
+}

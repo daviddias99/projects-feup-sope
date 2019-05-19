@@ -22,15 +22,20 @@ int main(int argc, char* argv[]){
     readCommand(&command);
 
     formatRequest(&request);
+    recordRequest(&request);
 
     if(setupResponseFIFO() != 0)
         exit(3);
 
-    if(setupRequestFIFO() != 0)
+    if(setupRequestFIFO() != 0) {
+        unlink(getResponseFIFOName());
         exit(4);
+    }
 
-    if(setupHandlers() != 0)
+    if(setupHandlers() != 0) {
+        closeComunication();
         exit(5);
+    }
 
     if(waitResponse(&request, &reply) != 0)
         exit(6);
