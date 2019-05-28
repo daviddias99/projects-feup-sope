@@ -40,7 +40,7 @@ bank_account_t createAdminBankAccount(char* password);
  * @param id                id of the bank account
  * @return bank_account_t*  pointer to the bank account or null if the account id isn't valid
  */
-static inline bank_account_t* findBankAccount(uint32_t id);
+bank_account_t* findBankAccount(uint32_t id);
 
 /**
  * @brief Inserts the bank account into the account array. (used account mutex)
