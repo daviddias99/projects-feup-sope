@@ -30,7 +30,7 @@ int validAccount(char* accountID){
     if(ID < 0)
         return INV_TRS_ACCOUNT;
 
-    if(ID > MAX_BANK_ACCOUNTS)
+    if(ID >= MAX_BANK_ACCOUNTS)
         return INV_TRS_ACCOUNT;
 
     return OK;
