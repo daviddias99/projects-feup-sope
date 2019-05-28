@@ -29,18 +29,17 @@ int op_checkBalance(req_value_t request_value, tlv_reply_t *reply,uint32_t offic
 
     reply->type = OP_BALANCE;
 
-    bank_account_t account = *findBankAccount(request_value.header.account_id);
-
     reply->value.header.account_id = request_value.header.account_id;
     reply->value.header.ret_code = RC_OK;
 
-    
+    bank_account_t* account = findBankAccount(request_value.header.account_id);
+
     pthread_mutex_lock(&account_mutex[reply->value.header.account_id]);
     logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_LOCK,SYNC_ROLE_ACCOUNT,request_value.header.account_id);
 
-    logSyncDelay(getLogfile(),officeID, account.account_id, header.op_delay_ms);
+    logSyncDelay(getLogfile(),officeID, account->account_id, header.op_delay_ms);
     usleep(MS_TO_US(header.op_delay_ms));
-    reply->value.balance.balance = account.balance;
+    reply->value.balance.balance = account->balance;
 
     pthread_mutex_unlock(&account_mutex[reply->value.header.account_id]);
     logSyncMech(getLogfile(),officeID,SYNC_OP_MUTEX_UNLOCK,SYNC_ROLE_ACCOUNT,request_value.header.account_id);
