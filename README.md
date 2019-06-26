@@ -1,23 +1,17 @@
 ## SOPE Project
 
-### TODO
+Projects of SOPE (Operating Systems - 2nd year of Integrated Master Degree in Computer Engineering).
 
-- [x] 1. Implementar o tamanho variável das mensagens
-- [x] 2. Verificar se as transferências dão ou não deadlocks
-- [x] 3. Verificar unlinks
-- [x] 4. Corrigir ordem das respostas dos erros
-- [ ] 5. Implementar secção crítica para o login
-- [ ] 6. Implementar secção crítica para as verificações
-- [x] 7. Contador de threads ativos
-- [x] 8. Verificar logging 
-- [x] 9. Error checking de todas as funções de sistema e afins
-    - [x] server_accounts
-    - [x] server_bank_office
-    - [x] server_operations
-    - [x] server_sync
-    - [x] server_util
-    - [x] server
-- [x] 10. Corrigir shutdown
-- [x] 11. Close dos offices
+### Course Information
+
+* All the course's information can be viewed [here](https://sigarra.up.pt/feup/en/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=419998).
+
+### Authors
+
+* **David Silva** - [daviddias99](https://github.com/daviddias99)
+* **Luís Cunha** - [luispcunha](https://github.com/luispcunha)
+* **Tito Griné** - [TitoGrine](https://github.com/TitoGrine)
+
+**Project Grade:** 19.4
 
      
